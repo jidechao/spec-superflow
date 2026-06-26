@@ -1,0 +1,22 @@
+{
+  "name": "spec-superflow",
+  "displayName": "spec-superflow",
+  "description": "Spec-first workflow: clarified requirements → execution contract → disciplined implementation",
+  "version": "0.1.0",
+  "author": {
+    "name": "MageByte",
+    "url": "https://github.com/MageByte-Zero"
+  },
+  "homepage": "https://github.com/MageByte-Zero/spec-superflow",
+  "repository": "https://github.com/MageByte-Zero/spec-superflow",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "skills",
+    "spec-driven-development",
+    "tdd",
+    "contract-driven",
+    "ai-coding"
+  ],
+  "skills": "./skills/"
+}

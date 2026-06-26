@@ -4,27 +4,93 @@
 
 ## Claude Code
 
-### 一键安装（推荐）
-
-在 Claude Code 中直接注册 marketplace 并安装：
+### Marketplace Install（推荐）
 
 ```
 /plugin marketplace add MageByte-Zero/spec-superflow
 /plugin install spec-superflow@spec-superflow
 ```
 
-### 或者：本地安装
+两行命令搞定。零拷贝、零配置。
+
+### 本地安装
 
 ```bash
 git clone https://github.com/MageByte-Zero/spec-superflow.git
 ```
 
-Claude Code 会自动发现 `.claude-plugin/` 目录下的插件，无需手动拷贝。
-
-如果未自动发现，在 Claude Code 中执行：
+在 Claude Code 中执行：
 
 ```
 /plugin install file:/absolute/path/to/spec-superflow
+```
+
+## Cursor
+
+### Marketplace Install（推荐）
+
+在 Cursor Agent chat 中：
+
+```
+/add-plugin spec-superflow
+```
+
+或者搜索 "spec-superflow" 在 Cursor 插件市场中找到并安装。
+
+### 手动安装
+
+```bash
+git clone https://github.com/MageByte-Zero/spec-superflow.git
+```
+
+Cursor 会自动发现 `.cursor-plugin/` 目录下的插件。
+
+## OpenAI Codex CLI
+
+在 Codex CLI 中打开插件搜索：
+
+```
+/plugins
+```
+
+搜索 `spec-superflow`，选择 Install Plugin。
+
+## OpenAI Codex App
+
+在 Codex App 中：
+- 点击侧边栏的 **Plugins**
+- 在 Coding 分类中找到 **spec-superflow**
+- 点击 `+` 安装
+
+## OpenCode
+
+在 `opencode.json` 中添加插件：
+
+```json
+{
+  "plugin": ["spec-superflow@git+https://github.com/MageByte-Zero/spec-superflow.git"]
+}
+```
+
+重启 OpenCode 即可。详细说明见 [.opencode/INSTALL.md](.opencode/INSTALL.md)。
+
+## GitHub Copilot CLI
+
+```
+copilot plugin marketplace add MageByte-Zero/spec-superflow
+copilot plugin install spec-superflow@spec-superflow
+```
+
+## Gemini CLI
+
+```
+gemini extensions install https://github.com/MageByte-Zero/spec-superflow
+```
+
+更新：
+
+```
+gemini extensions update spec-superflow
 ```
 
 ## Trae
@@ -35,15 +101,21 @@ mkdir -p ~/.trae/skills
 cp -R spec-superflow/skills/* ~/.trae/skills/
 ```
 
+---
+
 ## 使用
 
 安装完成后，告诉 Agent：
 
+```
+用 workflow-orchestrator 开始
+```
+
+`workflow-orchestrator` 会检查当前工件目录，判断你处于探索 / 规格 / 桥接 / 执行 / 收口的哪个阶段，然后自动路由到正确的下一个 skill。
+
 - 启动新的变更 → "用 workflow-orchestrator 开始"
 - 恢复旧的变更 → "继续上次的工作流"
 - 不确定当前状态 → "帮我看看现在该干什么"
-
-Agent 会自动检查当前工件，判断处于探索 / 规格 / 桥接 / 执行 / 收口的哪个阶段。
 
 ## 工作流目录约定
 
@@ -70,7 +142,6 @@ workflow/
 
 - `workflow-orchestrator` skill 已可用
 - 其余 5 个 skill 全部可见
-- 能明确请求 `workflow-orchestrator`
 
 ## 故障排查
 

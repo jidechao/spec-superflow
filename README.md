@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License"></a>
-  <a href="INSTALL.md"><img src="https://img.shields.io/badge/Claude%20Code%20%7C%20Trae-supported-green.svg" alt="Claude Code | Trae"></a>
+  <a href="INSTALL.md"><img src="https://img.shields.io/badge/Claude%20Code%20%7C%20Cursor%20%7C%20Trae-supported-green.svg" alt="Claude Code | Cursor | Trae"></a>
   <a href="https://github.com/MageByte-Zero/spec-superflow/stargazers"><img src="https://img.shields.io/github/stars/MageByte-Zero/spec-superflow" alt="GitHub Stars"></a>
 </p>
 
@@ -151,14 +151,26 @@ OpenSpec 擅长的                    Superpowers 擅长的
 
 ### 安装
 
-**Claude Code（推荐）：**
+支持 **Claude Code / Cursor / Codex / OpenCode / Copilot CLI / Gemini CLI / Trae** 共 7 个平台。
+
+**Claude Code：**
 
 ```
 /plugin marketplace add MageByte-Zero/spec-superflow
 /plugin install spec-superflow@spec-superflow
 ```
 
-两行命令搞定。零拷贝、零配置。
+**Cursor：**
+
+```
+/add-plugin spec-superflow
+```
+
+**Gemini CLI：**
+
+```
+gemini extensions install https://github.com/MageByte-Zero/spec-superflow
+```
 
 **Trae：**
 
@@ -168,7 +180,7 @@ mkdir -p ~/.trae/skills
 cp -R spec-superflow/skills/* ~/.trae/skills/
 ```
 
-更多安装方式见 [INSTALL.md](INSTALL.md)。
+所有平台安装方式见 [INSTALL.md](INSTALL.md)。
 
 ### 使用
 

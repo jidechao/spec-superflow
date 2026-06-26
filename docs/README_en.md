@@ -134,14 +134,26 @@ In concrete terms:
 
 ## Install
 
-**Claude Code (recommended):**
+Supports **Claude Code / Cursor / Codex / OpenCode / Copilot CLI / Gemini CLI / Trae** — 7 platforms.
+
+**Claude Code:**
 
 ```
 /plugin marketplace add MageByte-Zero/spec-superflow
 /plugin install spec-superflow@spec-superflow
 ```
 
-That's it. Zero copy, zero config.
+**Cursor:**
+
+```
+/add-plugin spec-superflow
+```
+
+**Gemini CLI:**
+
+```
+gemini extensions install https://github.com/MageByte-Zero/spec-superflow
+```
 
 **Trae:**
 
@@ -151,7 +163,7 @@ mkdir -p ~/.trae/skills
 cp -R spec-superflow/skills/* ~/.trae/skills/
 ```
 
-Full guide: [INSTALL.md](file:///Users/magebte/Documents/magebyte/open-source-plugins/spec-superflow/INSTALL.md)
+All install methods: [INSTALL.md](INSTALL.md)
 
 ## Quick Start
 
