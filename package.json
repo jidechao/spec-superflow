@@ -2,10 +2,12 @@
   "name": "spec-superflow",
   "version": "0.2.0",
   "description": "Spec-first workflow: integrates OpenSpec planning engine + Superpowers execution discipline via bridge contract. 9 collaborative skills, 7-platform support.",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "test": "node --test --experimental-strip-types tests/",
     "validate": "node scripts/validate-artifacts"
   },
   "keywords": [
@@ -19,5 +21,8 @@
     "trae"
   ],
   "author": "MageByte",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
 }
