@@ -22,6 +22,9 @@
   ],
   "author": "MageByte",
   "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "devDependencies": {
     "typescript": "^5.9.3"
   }
