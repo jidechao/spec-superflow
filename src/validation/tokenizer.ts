@@ -18,6 +18,7 @@ const ENGLISH_STOP_WORDS = new Set([
   'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way', 'even',
   'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us',
   'is', 'am', 'are', 'was', 'were', 'been', 'has', 'had', 'did', 'does',
+  'based', 'using', 'used',
 ]);
 
 // --- Chinese stop words ---
@@ -80,7 +81,7 @@ function tokenizeEnglish(text: string): Set<string> {
   for (const word of words) {
     if (ENGLISH_STOP_WORDS.has(word)) continue;
     const stemmed = stem(word);
-    if (stemmed.length <= 3) continue;
+    if (stemmed.length < 3) continue;
     tokens.add(stemmed);
   }
   return tokens;
@@ -88,7 +89,7 @@ function tokenizeEnglish(text: string): Set<string> {
 
 /**
  * Tokenize Chinese text: extract CJK sequences, produce sliding-window
- * tokens (2-char and 3-char), also extract ASCII words with English stemming.
+ * tokens (2-char through 5-char), also extract ASCII words with English stemming.
  * Remove Chinese stop words.
  */
 function tokenizeChinese(text: string): Set<string> {
@@ -109,19 +110,14 @@ function tokenizeChinese(text: string): Set<string> {
           tokens.add(run);
         }
 
-        // 2-char sliding window
-        for (let i = 0; i <= run.length - 2; i++) {
-          const bigram = run.slice(i, i + 2);
-          if (!CHINESE_STOP_WORDS.has(bigram)) {
-            tokens.add(bigram);
-          }
-        }
-
-        // 3-char sliding window
-        for (let i = 0; i <= run.length - 3; i++) {
-          const trigram = run.slice(i, i + 3);
-          if (!CHINESE_STOP_WORDS.has(trigram)) {
-            tokens.add(trigram);
+        // Sliding windows from length 2 up to min(run.length, 5)
+        const maxWindow = Math.min(run.length, 5);
+        for (let windowSize = 2; windowSize <= maxWindow; windowSize++) {
+          for (let i = 0; i <= run.length - windowSize; i++) {
+            const ngram = run.slice(i, i + windowSize);
+            if (!CHINESE_STOP_WORDS.has(ngram)) {
+              tokens.add(ngram);
+            }
           }
         }
       }
@@ -134,7 +130,7 @@ function tokenizeChinese(text: string): Set<string> {
         const lower = word.toLowerCase();
         if (ENGLISH_STOP_WORDS.has(lower)) continue;
         const stemmed = stem(lower);
-        if (stemmed.length <= 3) continue;
+        if (stemmed.length < 3) continue;
         tokens.add(stemmed);
       }
     }

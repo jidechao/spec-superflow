@@ -34,3 +34,14 @@ export interface VerificationReport {
   }[];
   verdict: 'PASS' | 'CONDITIONAL' | 'FAIL';
 }
+
+export interface SyncConflict {
+  requirement: string;
+  spec: string;
+  changes: string[];
+}
+
+export interface ConflictReport {
+  hasConflicts: boolean;
+  conflicts: SyncConflict[];
+}

@@ -177,6 +177,28 @@ describe('Validator.validateImplementation', () => {
     const coherence = report.dimensions.find(d => d.name === 'Coherence');
     assert.ok(coherence!.findings.length > 0);
   });
+
+  it('verifies Chinese spec content with Chinese tokenizer', () => {
+    const report = validator.validateImplementation(
+      '新增速率限制模块，使用令牌桶算法实现 src/middleware/rate-limit.ts',
+      '### Requirement: 速率限制\n系统必须实现令牌桶算法进行速率限制。\n#### Scenario: 正常请求\n- **WHEN** 请求频率在限制内\n- **THEN** 系统必须正常处理',
+      '## Decisions\n### Decision 1\n- Choice: 令牌桶算法\n- Rationale: 平滑限流'
+    );
+    const completeness = report.dimensions.find(d => d.name === 'Completeness');
+    assert.ok(completeness, 'Missing Completeness dimension');
+    assert.equal(completeness!.status, 'PASS', `Expected PASS but got ${completeness!.status}: ${JSON.stringify(completeness!.findings)}`);
+  });
+
+  it('detects missing requirement in Chinese spec (Completeness FAIL)', () => {
+    const report = validator.validateImplementation(
+      '新增日志模块 src/utils/logger.ts',
+      '### Requirement: 速率限制\n系统必须实现令牌桶算法进行速率限制。\n\n### Requirement: 日志记录\n系统必须记录所有API请求日志。',
+      '## Decisions\n### Decision 1\n- Choice: 令牌桶算法\n- Rationale: 平滑限流'
+    );
+    const completeness = report.dimensions.find(d => d.name === 'Completeness');
+    assert.equal(completeness!.status, 'FAIL');
+    assert.ok(completeness!.findings.some(f => f.message.includes('速率限制')));
+  });
 });
 
 describe('tokenize', () => {
@@ -201,5 +223,44 @@ describe('tokenize', () => {
     assert.equal(detectLanguage('速率限制模块必须支持令牌桶算法'), 'zh');
     const mixed = detectLanguage('使用 Redis 实现速率限制模块的令牌桶算法');
     assert.ok(['zh', 'mixed'].includes(mixed), `Expected zh or mixed, got: ${mixed}`);
+  });
+});
+
+describe('Validator.detectSyncConflicts', () => {
+  const validator = new Validator();
+
+  it('returns no conflicts when delta specs modify different requirements', () => {
+    const deltas = [
+      {
+        changeName: 'change-a',
+        content: '## MODIFIED Requirements\n### Requirement: Auth middleware\nThe system SHALL use JWT.\n#### Scenario: test\n- **WHEN** x\n- **THEN** y',
+      },
+      {
+        changeName: 'change-b',
+        content: '## MODIFIED Requirements\n### Requirement: Rate limiting\nThe system SHALL limit to 100 req/min.\n#### Scenario: test\n- **WHEN** x\n- **THEN** y',
+      },
+    ];
+    const report = validator.detectSyncConflicts(deltas);
+    assert.equal(report.hasConflicts, false);
+    assert.equal(report.conflicts.length, 0);
+  });
+
+  it('detects conflicts when two changes modify the same requirement', () => {
+    const deltas = [
+      {
+        changeName: 'change-a',
+        content: '## MODIFIED Requirements\n### Requirement: Auth middleware\nThe system SHALL use JWT tokens.\n#### Scenario: test\n- **WHEN** x\n- **THEN** y',
+      },
+      {
+        changeName: 'change-b',
+        content: '## MODIFIED Requirements\n### Requirement: Auth middleware\nThe system SHALL use session cookies.\n#### Scenario: test\n- **WHEN** x\n- **THEN** y',
+      },
+    ];
+    const report = validator.detectSyncConflicts(deltas);
+    assert.equal(report.hasConflicts, true);
+    assert.equal(report.conflicts.length, 1);
+    assert.equal(report.conflicts[0].requirement, 'Auth middleware');
+    assert.ok(report.conflicts[0].changes.includes('change-a'));
+    assert.ok(report.conflicts[0].changes.includes('change-b'));
   });
 });
