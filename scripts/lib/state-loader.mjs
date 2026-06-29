@@ -16,6 +16,20 @@ const BUILTIN_DEFAULTS = {
   last_transition: null,
   last_transition_from: null,
   last_transition_to: null,
+  dp_1_result: null,
+  dp_1_timestamp: null,
+  dp_2_result: null,
+  dp_2_timestamp: null,
+  dp_3_result: null,
+  dp_3_timestamp: null,
+  dp_4_result: null,
+  dp_4_timestamp: null,
+  dp_5_result: null,
+  dp_5_timestamp: null,
+  dp_6_result: null,
+  dp_6_timestamp: null,
+  dp_7_result: null,
+  dp_7_timestamp: null,
 };
 
 /**
@@ -60,6 +74,22 @@ export function writeState(changeDir, state) {
   lines.push(`last_transition: ${state.last_transition || 'null'}`);
   lines.push(`last_transition_from: ${state.last_transition_from || 'null'}`);
   lines.push(`last_transition_to: ${state.last_transition_to || 'null'}`);
+  lines.push('');
+  lines.push('# === Decision points ===');
+  lines.push(`dp_1_result: ${state.dp_1_result ?? 'null'}`);
+  lines.push(`dp_1_timestamp: ${state.dp_1_timestamp ?? 'null'}`);
+  lines.push(`dp_2_result: ${state.dp_2_result ?? 'null'}`);
+  lines.push(`dp_2_timestamp: ${state.dp_2_timestamp ?? 'null'}`);
+  lines.push(`dp_3_result: ${state.dp_3_result ?? 'null'}`);
+  lines.push(`dp_3_timestamp: ${state.dp_3_timestamp ?? 'null'}`);
+  lines.push(`dp_4_result: ${state.dp_4_result ?? 'null'}`);
+  lines.push(`dp_4_timestamp: ${state.dp_4_timestamp ?? 'null'}`);
+  lines.push(`dp_5_result: ${state.dp_5_result ?? 'null'}`);
+  lines.push(`dp_5_timestamp: ${state.dp_5_timestamp ?? 'null'}`);
+  lines.push(`dp_6_result: ${state.dp_6_result ?? 'null'}`);
+  lines.push(`dp_6_timestamp: ${state.dp_6_timestamp ?? 'null'}`);
+  lines.push(`dp_7_result: ${state.dp_7_result ?? 'null'}`);
+  lines.push(`dp_7_timestamp: ${state.dp_7_timestamp ?? 'null'}`);
 
   fs.writeFileSync(filePath, lines.join('\n') + '\n', 'utf-8');
 }

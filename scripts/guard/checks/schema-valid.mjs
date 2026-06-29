@@ -37,7 +37,7 @@ export async function checkSchemaValid(changeDir) {
     }
   }
 
-  // Validate each specs/*/spec.md
+  // Validate each specs/*/spec.md as delta specs
   const specsDir = path.join(changeDir, 'specs');
   if (fs.existsSync(specsDir)) {
     for (const entry of fs.readdirSync(specsDir, { withFileTypes: true })) {
@@ -45,7 +45,7 @@ export async function checkSchemaValid(changeDir) {
         const specFile = path.join(specsDir, entry.name, 'spec.md');
         if (fs.existsSync(specFile)) {
           const content = fs.readFileSync(specFile, 'utf-8');
-          const report = validator.validateSpecContent(entry.name, content);
+          const report = validator.validateDeltaSpec(content);
           if (!report.valid) {
             for (const issue of report.issues) {
               if (issue.level === 'ERROR') {

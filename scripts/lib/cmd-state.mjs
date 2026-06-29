@@ -3,6 +3,14 @@ import { parseArgs } from 'node:util';
 import { readState, writeState, updateField, rebuildState } from './state-loader.mjs';
 import { computeArtifactsHash, computeContractHash } from './hash.mjs';
 
+const SETTABLE_FIELDS = [
+  'workflow', 'execution_mode', 'test_result',
+  'dp_1_result', 'dp_1_timestamp', 'dp_2_result', 'dp_2_timestamp',
+  'dp_3_result', 'dp_3_timestamp', 'dp_4_result', 'dp_4_timestamp',
+  'dp_5_result', 'dp_5_timestamp', 'dp_6_result', 'dp_6_timestamp',
+  'dp_7_result', 'dp_7_timestamp',
+];
+
 export async function run(args) {
   const { positionals, values } = parseArgs({
     args,
@@ -12,13 +20,13 @@ export async function run(args) {
     allowPositionals: true,
   });
 
-  const sub = positionals[0];  // init | check | transition | get | rebuild
+  const sub = positionals[0];  // init | check | transition | get | rebuild | set
   const changeDir = positionals[1];
   const arg = positionals[2];  // <to-state> for transition, <field> for get
 
   if (!changeDir) {
     console.error('Usage: ssf state <subcommand> <change-dir> [arg]');
-    console.error('Subcommands: init, check, transition, get, rebuild');
+    console.error('Subcommands: init, check, transition, get, rebuild, set');
     process.exit(2);
   }
 
@@ -105,8 +113,28 @@ export async function run(args) {
       }
       break;
     }
+    case 'set': {
+      // ssf state set <change-dir> <field> <value>
+      const field = arg;
+      const value = positionals[3];
+      if (!field || value === undefined) {
+        console.error('Usage: ssf state set <change-dir> <field> <value>');
+        process.exit(2);
+      }
+      if (!SETTABLE_FIELDS.includes(field)) {
+        console.error(`⛔ Field '${field}' is not settable (use 'transition' for state, or check SETTABLE_FIELDS)`);
+        process.exit(1);
+      }
+      updateField(changeDir, field, value);
+      if (values.json) {
+        console.log(JSON.stringify({ ok: true, field, value }));
+      } else {
+        console.log(`✅ Set ${field} = ${value}`);
+      }
+      break;
+    }
     default:
-      console.error(`Unknown subcommand: ${sub}. Valid: init, check, transition, get, rebuild`);
+      console.error(`Unknown subcommand: ${sub}. Valid: init, check, transition, get, rebuild, set`);
       process.exit(2);
   }
 }
