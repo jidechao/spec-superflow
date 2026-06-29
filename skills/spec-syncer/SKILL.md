@@ -18,6 +18,19 @@ After a spec-superflow change completes, its delta specs (ADDED/MODIFIED/REMOVED
 - When the user asks about spec consistency
 - When the workflow orchestrator detects stale main specs
 
+### Pre-Flight: Conflict Detection
+
+Before syncing, check for conflicts across unsynced changes:
+
+1. Run: `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" sync <change-dir>`
+2. If conflicts are detected, the CLI will report which requirements are modified by multiple changes
+3. Present the conflict list to the user and ask for resolution order
+4. Sync changes one at a time in the user-specified order
+
+Alternatively, use the Validator API directly:
+- Call `validator.detectSyncConflicts(deltaSpecs)` with all pending delta specs
+- If `hasConflicts` is true, present conflicts before proceeding
+
 ### Pre-Flight: Abandoned Change Guard
 
 Before syncing any delta specs:

@@ -30,6 +30,12 @@ Read before implementation:
 - relevant `specs/`
 - relevant `design.md`
 
+### Config Check
+
+Before determining execution mode, check the project configuration:
+- Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" execution.inlineThreshold`
+- If the script returns a value, use it as the inline threshold; otherwise use default (3)
+
 ## Core Laws
 
 ### Law 1: Contract First
@@ -126,6 +132,22 @@ Before dispatching Task 1, scan the execution contract and tasks for conflicts:
 - Present all findings to the user as one batched question before execution begins
 
 If the scan is clean, proceed without comment.
+
+### Worktree Isolation (Optional, Recommended)
+
+Before starting execution, check the current branch:
+
+1. Run: `git branch --show-current`
+2. If on `main` or `master` branch:
+   - Create worktree: `git worktree add ../<project>-<change-name> -b <change-name>`
+   - Execute all tasks in the worktree directory
+3. If already on a feature branch → proceed normally
+4. After all batches complete, remind the user:
+   - "Worktree ready for merge. Suggested commands:"
+   - `git merge <change-name>`
+   - `git worktree remove <worktree-path>`
+
+If `git worktree` is unavailable (not a git repo, or git not installed) → silently skip, continue in current directory.
 
 ### Model Selection Strategy
 

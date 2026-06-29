@@ -26,6 +26,14 @@ Create or refine:
 - `design.md`
 - `tasks.md`
 
+### Config Check
+
+Before generating artifacts, check the project configuration:
+- Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" artifacts.order`
+- Generate artifacts in the configured order (default: proposal → specs → design → tasks → execution-contract)
+- Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" artifacts.skip`
+- Skip any artifacts listed in the skip configuration
+
 Use OpenSpec-style artifact roles:
 
 - `proposal.md` defines why and scope

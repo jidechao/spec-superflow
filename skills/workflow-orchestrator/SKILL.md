@@ -62,6 +62,14 @@ Then answer these questions in order:
 5. Is execution in progress or blocked by a bug?
 6. Is the change already in verification or wrap-up?
 
+### Config-Aware Routing
+
+Before routing, check project configuration:
+- Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" artifacts.order`
+- If the config specifies a custom artifact order, follow it when checking artifact completeness
+- Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" artifacts.skip`
+- If artifacts are in the skip list, do not require them for state transitions
+
 ## Enhanced Stale Detection via Content Inspection
 
 Do not rely solely on file existence to determine staleness. Inspect file **contents** to detect drift:
