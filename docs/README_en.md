@@ -1,6 +1,6 @@
 # spec-superflow
 
-`spec-superflow` is a self-contained workflow integration plugin for Claude Code and Trae.
+`spec-superflow` is a self-contained workflow integration plugin for AI coding agents.
 
 It combines:
 
@@ -164,9 +164,9 @@ In concrete terms:
 
 ## Install
 
-Supports **Claude Code / Cursor / OpenAI Codex CLI / OpenAI Codex App / OpenCode / GitHub Copilot CLI / Gemini CLI / Trae**.
+Supports **Claude Code / Cursor / OpenAI Codex CLI / OpenAI Codex App / GitHub Copilot CLI / Gemini CLI**.
 
-Any client that can load a local `skills/` directory can use the same repository clone flow, including Qoder and Trae CN.
+Any client that can load a local `skills/` directory can use the same repository clone flow, including OpenCode, Trae, Qoder, and Trae CN.
 
 **Claude Code:**
 
@@ -183,26 +183,23 @@ Any client that can load a local `skills/` directory can use the same repository
 
 **OpenAI Codex CLI:**
 
-```
-/plugins
+```bash
+codex plugin marketplace add MageByte-Zero/spec-superflow
+codex plugin add spec-superflow@spec-superflow
 ```
 
-If the plugin does not show up right away, refresh the plugin list or restart Codex CLI and search again.
+`spec-superflow` is not part of the OpenAI curated marketplace, so add this repository as a marketplace first.
 
 **OpenAI Codex App:**
 
-- Open the **Plugins** panel in the sidebar
-- Find **spec-superflow** under Coding
-- Click `+` to install
-
-If it still does not appear, reopen the Plugins panel or make sure the client version supports plugin catalog indexing.
+Run the Codex CLI marketplace commands above, restart the Codex app, then open **Plugins** and switch to the `spec-superflow` marketplace.
 
 **OpenCode:**
 
-```json
-{
-  "plugin": ["spec-superflow@git+https://github.com/MageByte-Zero/spec-superflow.git"]
-}
+```bash
+git clone https://github.com/MageByte-Zero/spec-superflow.git
+mkdir -p your-project/.agents
+ln -s /absolute/path/to/spec-superflow/skills your-project/.agents/skills
 ```
 
 **GitHub Copilot CLI:**
@@ -336,7 +333,7 @@ Yes. The workflow does not assume a greenfield project. The spec-explorer inspec
 - ✅ TypeScript engine with strict compilation (`npm run build`)
 - ✅ Integration test suite using real example artifacts (`npm test`)
 - ✅ 9 collaborative skills with complete workflow coverage
-- ✅ 7-platform support (Claude Code / Cursor / Codex / OpenCode / Copilot CLI / Gemini CLI / Trae)
+- ✅ Multi-agent packaging (Claude Code / Cursor / Codex / Copilot CLI / Gemini CLI + local skills clients)
 - ✅ Self-contained: zero external npm dependencies
 - ✅ Two complete example change sets (add-dark-mode, refactor-auth-boundary)
 - ✅ MIT license, CONTRIBUTING.md, and installation guide included

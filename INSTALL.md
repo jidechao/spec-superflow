@@ -54,36 +54,43 @@ Cursor 会自动发现 `.cursor-plugin/` 目录下的插件。
 
 ## OpenAI Codex CLI
 
-在 Codex CLI 中打开插件搜索：
+`spec-superflow` 不在 OpenAI curated 目录中。先把本仓库添加为 Codex marketplace：
 
+```bash
+codex plugin marketplace add MageByte-Zero/spec-superflow
+codex plugin add spec-superflow@spec-superflow
 ```
-/plugins
+
+验证：
+
+```bash
+codex plugin list | grep spec-superflow
 ```
-
-搜索 `spec-superflow`，选择 Install Plugin。
-
-如果暂时搜不到，请先刷新插件列表或重启 Codex CLI，再重新搜索。
 
 ## OpenAI Codex App
 
-在 Codex App 中：
-- 点击侧边栏的 **Plugins**
-- 在 Coding 分类中找到 **spec-superflow**
-- 点击 `+` 安装
+Codex App 使用同一套本地 marketplace 配置。先执行 Codex CLI 安装命令：
 
-如果暂时搜不到，请重开 Plugins 面板或确认客户端已经更新到支持插件目录索引的版本。
+```bash
+codex plugin marketplace add MageByte-Zero/spec-superflow
+codex plugin add spec-superflow@spec-superflow
+```
+
+然后重启 Codex App，在 **Plugins** 面板里切换到 `spec-superflow` marketplace，即可看到并启用插件。
 
 ## OpenCode
 
-在 `opencode.json` 中添加插件：
+OpenCode 使用本地 skills 发现方式。仓库已提供 `.agents/skills -> ../skills` 入口，所以在本仓库中打开 OpenCode 时可直接发现技能。
 
-```json
-{
-  "plugin": ["spec-superflow@git+https://github.com/MageByte-Zero/spec-superflow.git"]
-}
+在其它项目中使用时，把本仓库的 `skills/` 复制或 symlink 到目标项目的 `.agents/skills`：
+
+```bash
+git clone https://github.com/MageByte-Zero/spec-superflow.git
+mkdir -p your-project/.agents
+ln -s /absolute/path/to/spec-superflow/skills your-project/.agents/skills
 ```
 
-重启 OpenCode 即可。详细说明见 [.opencode/INSTALL.md](.opencode/INSTALL.md)。
+详细说明见 [.opencode/INSTALL.md](.opencode/INSTALL.md)。
 
 ## GitHub Copilot CLI
 

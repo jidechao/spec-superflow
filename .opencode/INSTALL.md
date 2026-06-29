@@ -6,55 +6,47 @@
 
 ## Installation
 
-Add spec-superflow to the `plugin` array in your `opencode.json` (global or project-level):
+OpenCode discovers agent skills from project skill directories. This repository exposes the existing `skills/` folder through:
 
-```json
-{
-  "plugin": ["spec-superflow@git+https://github.com/MageByte-Zero/spec-superflow.git"]
-}
+```text
+.agents/skills -> ../skills
 ```
 
-Restart OpenCode. That's it — the plugin auto-installs and registers all skills.
+If you open OpenCode inside this repository, the skills are available through that project-local entry.
 
-Verify by asking: "Tell me about workflow-orchestrator"
+For another project, point that project's `.agents/skills` at this repository's `skills/` directory:
+
+```bash
+git clone https://github.com/MageByte-Zero/spec-superflow.git
+mkdir -p your-project/.agents
+ln -s /absolute/path/to/spec-superflow/skills your-project/.agents/skills
+```
+
+If symlinks are not convenient on your platform, copy the folder instead:
+
+```bash
+mkdir -p your-project/.agents
+cp -R /absolute/path/to/spec-superflow/skills your-project/.agents/skills
+```
 
 ## Usage
 
-Use OpenCode's native `skill` tool:
+Ask OpenCode to use the workflow entry skill:
 
+```text
+use workflow-orchestrator to start
 ```
-use skill tool to list skills
-use skill tool to load spec-superflow/workflow-orchestrator
-```
 
-## Updating
+Or explicitly load:
 
-spec-superflow updates automatically when you restart OpenCode.
-
-To pin a specific version:
-
-```json
-{
-  "plugin": ["spec-superflow@git+https://github.com/MageByte-Zero/spec-superflow.git#v0.1.0"]
-}
+```text
+spec-superflow/workflow-orchestrator
 ```
 
 ## Troubleshooting
 
-### Plugin not loading
-
-1. Check logs: `opencode run --print-logs "hello" 2>&1 | grep -i spec-superflow`
-2. Verify the plugin line in your `opencode.json`
-3. Make sure you're running a recent version of OpenCode
-
 ### Skills not found
 
-1. Use `skill` tool to list what's discovered
-2. Check that the plugin is loading (see above)
-
-### Tool mapping
-
-When skills reference Claude Code tools, OpenCode adapts:
-- `TodoWrite` → `todowrite`
-- `Task` with subagents → `@mention` syntax
-- File operations → native OpenCode tools
+1. Verify that `your-project/.agents/skills/workflow-orchestrator/SKILL.md` exists.
+2. Restart OpenCode after adding or changing the skill directory.
+3. Use a real directory copy instead of a symlink if your environment does not follow symlinks.

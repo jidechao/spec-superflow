@@ -1,7 +1,7 @@
 {
   "name": "spec-superflow",
   "version": "0.6.0",
-  "description": "Spec-first workflow: integrates OpenSpec planning engine + Superpowers execution discipline via bridge contract. 9 collaborative skills, 7-platform support.",
+  "description": "Spec-first workflow: integrates OpenSpec planning engine + Superpowers execution discipline via bridge contract. 9 collaborative skills for multi-agent coding tools.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -22,7 +22,11 @@
     "contract-driven",
     "claude-code",
     "cursor",
-    "trae"
+    "trae",
+    "codex",
+    "gemini-cli",
+    "copilot-cli",
+    "opencode"
   ],
   "author": "MageByte",
   "license": "MIT",

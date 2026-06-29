@@ -1,0 +1,39 @@
+{
+  "name": "spec-superflow",
+  "owner": {
+    "name": "MageByte",
+    "url": "https://github.com/MageByte-Zero"
+  },
+  "metadata": {
+    "description": "Spec-first workflow plugins and skills for AI coding agents.",
+    "version": "0.6.0"
+  },
+  "plugins": [
+    {
+      "name": "spec-superflow",
+      "description": "Spec-first workflow with planning artifacts, execution contracts, TDD, review gates, systematic debugging, and delta spec sync.",
+      "version": "0.6.0",
+      "source": ".",
+      "author": {
+        "name": "MageByte",
+        "url": "https://github.com/MageByte-Zero"
+      },
+      "homepage": "https://github.com/MageByte-Zero/spec-superflow",
+      "repository": "https://github.com/MageByte-Zero/spec-superflow",
+      "license": "MIT",
+      "keywords": [
+        "workflow",
+        "skills",
+        "spec-driven-development",
+        "tdd",
+        "sdd",
+        "contract-driven",
+        "code-review",
+        "debugging",
+        "spec-sync"
+      ],
+      "category": "Productivity",
+      "skills": "skills/"
+    }
+  ]
+}
