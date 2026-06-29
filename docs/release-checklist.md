@@ -11,6 +11,9 @@ Use this checklist before publishing a new version of `spec-superflow`.
 - `LICENSE` is present
 - `.claude-plugin/plugin.json` has the intended version
 - `.claude-plugin/marketplace.json` version matches `plugin.json`
+- `.cursor-plugin/plugin.json` version matches `plugin.json`
+- `gemini-extension.json` version matches `plugin.json`
+- All 5 manifests can be synced via `ssf version <semver>`
 
 ## Workflow Integrity
 
@@ -37,6 +40,14 @@ For each example in `docs/examples/`:
 - `design.md` defines technical shape and constraints
 - `tasks.md` defines execution order
 - `execution-contract.md` defines approved build rules
+
+## CLI And Config
+
+- `node scripts/spec-superflow.mjs doctor` — all checks pass
+- `node scripts/spec-superflow.mjs version <version> --dry-run` — all manifests in sync
+- `node scripts/spec-superflow.mjs --help` — all subcommands listed
+- `spec-superflow.config.json` absence still works (backward compatible defaults)
+- `package.json` `bin` field points to correct entry script
 
 ## Publishing Checks
 

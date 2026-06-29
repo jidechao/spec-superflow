@@ -2,3 +2,4 @@ export { VALIDATION_MESSAGES, MIN_WHY_SECTION_LENGTH, MIN_PURPOSE_LENGTH, MAX_WH
 export { Validator } from './validation/validator.js';
 export { REQUIREMENT_HEADER_REGEX, normalizeRequirementName, extractRequirementsSection, parseDeltaSpec } from './parsing/requirement-blocks.js';
 export { parseChangeMarkdown } from './parsing/change-parser.js';
+export { tokenize, detectLanguage } from './validation/tokenizer.js';

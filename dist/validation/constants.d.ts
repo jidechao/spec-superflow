@@ -37,5 +37,6 @@ export declare const VERIFICATION_MESSAGES: {
     readonly COHERENCE_NAMING_MISMATCH: "Design decision naming does not match implementation naming";
     readonly COHERENCE_PATTERN_MISSING: "Architecture pattern from design.md not found in implementation: {pattern}";
     readonly VERIFICATION_PLACEHOLDER_DETECTED: "Diff summary contains placeholder markers (TODO, FIXME, HACK)";
+    readonly CONFLICT_DETECTED: "Requirement \"{requirement}\" is modified by multiple changes: {changes}";
 };
 export declare const MIN_ABANDONMENT_REASON_LENGTH = 50;
