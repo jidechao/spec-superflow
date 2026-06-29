@@ -16,3 +16,4 @@ node_modules/
 # dist/ is committed so the plugin works out-of-the-box after clone.
 # Uncomment the next line if you prefer to not track compiled output:
 # dist/
+docs/v0.4.0-platform-evolution-design.md
