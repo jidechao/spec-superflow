@@ -25,10 +25,21 @@ Only use it after the contract exists and the user has approved it.
 
 Read before implementation:
 
-- `execution-contract.md`
-- `tasks.md`
-- relevant `specs/`
-- relevant `design.md`
+- `execution-contract.md` (unless workflow is `tweak` — tweak edits config/doc files directly without a contract)
+- `tasks.md` (unless workflow is `tweak`)
+- relevant `specs/` (unless workflow is `tweak`)
+- relevant `design.md` (unless workflow is `tweak`)
+
+### Workflow Mode Check
+
+Before anything else, check the current workflow mode:
+
+```bash
+ssf state get <change-dir> workflow
+```
+
+- If `tweak`: skip contract/spec input requirements. Proceed directly to edit the target files.
+- If `hotfix` or `full`: follow the standard contract-first discipline.
 
 ### Config Check
 
@@ -180,7 +191,8 @@ Before starting execution, check the current branch:
 1. Run: `git branch --show-current`
 2. If on `main` or `master` branch:
    - Create worktree: `git worktree add ../<project>-<change-name> -b <change-name>`
-   - Execute all tasks in the worktree directory
+   - **Change the working directory** to the worktree path before any file operations: `cd ../<project>-<change-name>`
+   - All subsequent commands (task dispatch, review, progress tracking) must run from the worktree directory
 3. If already on a feature branch → proceed normally
 4. After all batches complete, remind the user:
    - "Worktree ready for merge. Suggested commands:"
@@ -205,13 +217,13 @@ Use the least powerful model that can handle each role:
 
 For each task in the execution batch:
 
-1. **Dispatch implementer**: Use the template at `implementer-prompt.md` to craft the dispatch. Run `scripts/task-brief PLAN_FILE N` to extract the task brief to a file. Compose the dispatch prompt with: (a) where this task fits, (b) the brief path, (c) interfaces/decisions from prior tasks, (d) report file path.
+1. **Dispatch implementer**: Use the template at `${CLAUDE_PLUGIN_ROOT}/skills/build-executor/implementer-prompt.md` to craft the dispatch. Run `scripts/task-brief PLAN_FILE N` to extract the task brief to a file. Compose the dispatch prompt with: (a) where this task fits, (b) the brief path, (c) interfaces/decisions from prior tasks, (d) report file path.
 2. **Handle implementer response**:
    - **DONE**: Generate review package with `scripts/review-package BASE HEAD` and dispatch task reviewer
    - **DONE_WITH_CONCERNS**: Read concerns, assess, then review
    - **NEEDS_CONTEXT**: Provide missing context, re-dispatch
    - **BLOCKED**: Assess blocker — if task requires more reasoning, re-dispatch with better model; if plan is wrong, escalate to user
-3. **Review**: Dispatch task reviewer using `task-reviewer-prompt.md`. Reviewer returns spec compliance verdict + code quality verdict.
+3. **Review**: Dispatch task reviewer using `${CLAUDE_PLUGIN_ROOT}/skills/build-executor/task-reviewer-prompt.md`. Reviewer returns spec compliance verdict + code quality verdict.
 4. **Fix**: If Critical or Important issues found, dispatch fix subagent. Re-review after fixes.
 5. **Mark complete**: Append one line to `.superpowers/sdd/progress.md`: `Task N: complete (commits <base7>..<head7>, review clean)`
 
@@ -237,7 +249,7 @@ After each batch completes and the progress ledger is updated, sync the state fi
 
 ### Dispatch Instructions for Implementer Subagents
 
-Refer to `implementer-prompt.md` for the complete dispatch template. Key principles:
+Refer to `${CLAUDE_PLUGIN_ROOT}/skills/build-executor/implementer-prompt.md` for the complete dispatch template. Key principles:
 
 - Subagent works from its task brief, not the whole plan
 - Subagent follows TDD (the rules embedded in this build-executor)
@@ -247,7 +259,7 @@ Refer to `implementer-prompt.md` for the complete dispatch template. Key princip
 
 ### Dispatch Instructions for Reviewer Subagents
 
-Refer to `task-reviewer-prompt.md` for the complete dispatch template. Key principles:
+Refer to `${CLAUDE_PLUGIN_ROOT}/skills/build-executor/task-reviewer-prompt.md` for the complete dispatch template. Key principles:
 
 - Reviewer gets the task brief, the implementer's report, and the diff file — nothing more
 - Reviewer does NOT trust the implementer's report; it verifies against the diff

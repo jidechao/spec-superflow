@@ -74,9 +74,20 @@ Before handing off to `spec-writer`, confirm with the user:
 - "Here's what I'm hearing. [Restate problem, scope, non-goals, success criteria]. Does this match what you have in mind?"
 - If the user corrects anything, incorporate it and re-validate.
 
-### 6. Hand Off
+### 6. DP-1: Requirement Confirmation Gate
 
-Once the idea is stable, hand off to `spec-writer`.
+After the user confirms the exploration summary, record the decision point:
+
+```bash
+ssf state set <change-dir> dp_1_result "confirmed: <one-line summary>"
+ssf state set <change-dir> dp_1_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+```
+
+DP-1 confirms that scope, non-goals, and success criteria are agreed before artifact creation begins. Without this gate, `spec-writer` may generate specs against unconfirmed assumptions.
+
+### 7. Hand Off
+
+Once DP-1 is recorded, hand off to `spec-writer`.
 
 ## Anti-Patterns
 

@@ -39,7 +39,7 @@ HEAD_SHA=$(git rev-parse HEAD)
 
 **2. Dispatch code reviewer subagent:**
 
-Dispatch a `general-purpose` subagent using the template at `code-reviewer-prompt.md`.
+Dispatch a `general-purpose` subagent using the template at `${CLAUDE_PLUGIN_ROOT}/skills/code-reviewer/code-reviewer-prompt.md`.
 
 **Placeholders to fill:**
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `spec-superflow` is a self-contained Claude Code plugin that fuses OpenSpec-style planning with Superpowers-style execution discipline. It is distributed as a set of skills in `skills/` plus a small TypeScript validation/parser engine in `src/`. The plugin supports multiple clients, but this repository is primarily developed and tested as a Claude Code plugin.
 
-Current version: `0.8.0`.
+Current version: `0.8.1`.
 
 ## Commands
 

@@ -12,6 +12,6 @@ export function checkContractFresh(changeDir) {
   }
   return {
     pass: false,
-    failures: ['execution-contract.md is stale: artifacts hash mismatch. Re-run bridge-contract to regenerate.'],
+    failures: ['execution-contract.md is stale: artifacts hash mismatch. Re-run contract-builder to regenerate.'],
   };
 }

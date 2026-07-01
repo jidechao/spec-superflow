@@ -108,9 +108,9 @@ Ask the user at least these questions. Record the answers in `.spec-superflow.ya
 After the user confirms:
 
 ```bash
-node scripts/spec-superflow.mjs state set <change-dir> dp_0_decisions "<summary>"
-node scripts/spec-superflow.mjs state set <change-dir> dp_0_confirmed true
-node scripts/spec-superflow.mjs state set <change-dir> dp_0_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+ssf state set <change-dir> dp_0_decisions "<summary>"
+ssf state set <change-dir> dp_0_confirmed true
+ssf state set <change-dir> dp_0_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
 
 Then proceed to normal state detection and routing.
@@ -225,7 +225,7 @@ Compare the proposal's scope against spec files:
 
 ### Route to `build-executor` when:
 
-- **Guard check**: Run `node scripts/guard/guard.mjs check <dir> approved executing --json`
+- **Guard check**: Run `node scripts/guard/guard.mjs check <dir> approved-for-build executing --json`
   - If exit code ≠ 0 → BLOCK. Report failures (contract stale or artifacts missing), do not route.
   - If exit code = 0 → proceed.
 - `execution-contract.md` exists
@@ -287,7 +287,7 @@ When workflow is `hotfix`:
 When workflow is `tweak`:
 - Route directly to `build-executor` (direct edit mode)
 - Skip `need-explorer`, `spec-writer`, and `contract-builder`
-- Guard check: `node scripts/guard/guard.mjs check <dir> exploring approved --workflow tweak --json`
+- Guard check: `node scripts/guard/guard.mjs check <dir> exploring approved-for-build --workflow tweak --json`
 - After execution: route to `release-archivist` (lightweight closure: file exists + syntax check)
 
 ### Post-Transition Injection Prompt

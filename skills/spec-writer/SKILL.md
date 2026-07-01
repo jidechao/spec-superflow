@@ -39,7 +39,7 @@ Create or refine:
 
 Before generating artifacts, check the project configuration:
 - Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" artifacts.order`
-- Generate artifacts in the configured order (default: proposal → specs → design → tasks → execution-contract)
+- Generate artifacts in the configured order (default: proposal → specs → design → tasks)
 - Run: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" artifacts.skip`
 - Skip any artifacts listed in the skip configuration
 
@@ -190,11 +190,32 @@ Before handing off:
 - [ ] Verify zero placeholders — grep for TBD, TODO, "implement later", "figure out", "add appropriate"
 - [ ] Verify task granularity — each step is 2-5 min, atomic, concretely actionable
 
+## DP-2: Artifact Review Gate
+
+Before handing off to `contract-builder`, present a summary of all artifacts to the user for review. Do not assume the artifacts are correct just because validation passed — the user is the domain expert.
+
+1. **Summarize each artifact** in 2-3 sentences:
+   - `proposal.md`: what problem, what changes, scope boundaries
+   - `specs/`: key requirements and scenarios
+   - `design.md`: architecture decisions and trade-offs
+   - `tasks.md`: batch breakdown and dependency chain
+
+2. **Ask the user** if anything needs adjustment before the contract is generated.
+
+3. **Record DP-2** after user approval:
+
+```bash
+ssf state set <change-dir> dp_2_result "approved: <one-line summary>"
+ssf state set <change-dir> dp_2_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+```
+
+If the user requests changes, make them and re-present. Do not hand off until DP-2 is recorded.
+
 ## Handoff Rule
 
 Do not start implementation after writing planning artifacts.
 
-Once the artifacts are stable and validated, hand off to `contract-builder`.
+Once the artifacts are stable, validated, and DP-2 is recorded, hand off to `contract-builder`.
 
 ## Output Standard
 

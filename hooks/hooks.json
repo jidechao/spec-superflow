@@ -1,5 +1,5 @@
 {
-  "description": "spec-superflow session start hook - injects workflow-orchestrator as session context",
+  "description": "spec-superflow session start hook - injects workflow-start as session context",
   "hooks": {
     "SessionStart": [
       {

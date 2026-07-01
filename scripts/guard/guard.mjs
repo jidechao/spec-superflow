@@ -12,12 +12,12 @@ const TRANSITION_CHECKS = {
   'exploring:specifying': ['artifacts-exist'],
   'specifying:bridging':  ['artifacts-exist', 'schema-valid'],
   'bridging:approved':    ['artifacts-exist', 'schema-valid', 'contract-fresh'],
-  'approved:executing':   ['artifacts-exist', 'contract-fresh'],
+  'approved-for-build:executing':   ['artifacts-exist', 'contract-fresh'],
   'executing:closing':    ['tasks-complete', 'tests-passing'],
   'executing:debugging':  [],
   'debugging:executing':  ['contract-fresh'],
   'exploring:bridging':   ['artifacts-exist'],
-  'exploring:approved':   ['artifacts-exist'],
+  'exploring:approved-for-build':   ['artifacts-exist'],
 };
 
 function applyWorkflowMode(checks, workflow) {
@@ -25,7 +25,7 @@ function applyWorkflowMode(checks, workflow) {
 
   const SKIP_DIMENSIONS = {
     hotfix: ['schema-valid'],
-    tweak: ['schema-valid', 'contract-fresh'],
+    tweak: ['schema-valid', 'contract-fresh', 'artifacts-exist'],
   };
 
   const skip = SKIP_DIMENSIONS[workflow] || [];

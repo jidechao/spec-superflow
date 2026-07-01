@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import { readState } from './state-loader.mjs';
 
 const DP_NAMES = {
+  0: '用户确认门禁',
   1: '需求确认',
   2: '工件审查',
   3: '契约批准',
@@ -27,7 +28,7 @@ function formatTimestamp(ts) {
 
 function generateReport(changeDir, state) {
   const rows = [];
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 0; i <= 7; i++) {
     const result = formatResult(state[`dp_${i}_result`]);
     const timestamp = formatTimestamp(state[`dp_${i}_timestamp`]);
     rows.push({ dp: i, name: DP_NAMES[i], result, timestamp });
@@ -48,7 +49,7 @@ function generateReport(changeDir, state) {
     md += `| DP-${r.dp} | ${r.name} | ${r.result} | ${r.timestamp} |\n`;
   }
 
-  md += `\n**统计**: ${recordedCount}/7 已记录，${missingCount}/7 未记录。\n\n`;
+  md += `\n**统计**: ${recordedCount}/8 已记录，${missingCount}/8 未记录。\n\n`;
 
   md += `## 逐决策点说明\n\n`;
   for (const r of rows) {

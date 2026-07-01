@@ -8,7 +8,7 @@ import { execSync } from 'node:child_process';
 
 const DEFAULTS = {
   artifacts: {
-    order: ['proposal', 'specs', 'design', 'tasks', 'execution-contract'],
+    order: ['proposal', 'specs', 'design', 'tasks'],
     skip: [],
   },
   execution: {

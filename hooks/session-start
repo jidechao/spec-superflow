@@ -1,30 +1,13 @@
 #!/usr/bin/env bash
 # SessionStart hook for spec-superflow plugin
+# v0.8.2: inject only a lightweight pointer instead of the full workflow-start
+# skill to reduce per-session context-window usage (see issue #5).
 
 set -euo pipefail
 
-# Determine plugin root directory
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PLUGIN_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-
-# Read workflow-orchestrator content
-workflow_orchestrator_content=$(cat "${PLUGIN_ROOT}/skills/workflow-orchestrator/SKILL.md" 2>&1 || echo "Error reading workflow-orchestrator skill")
-
-# Escape string for JSON embedding using bash parameter substitution.
-# Each ${s//old/new} is a single C-level pass - orders of magnitude
-# faster than the character-by-character loop this replaces.
-escape_for_json() {
-    local s="$1"
-    s="${s//\\/\\\\}"
-    s="${s//\"/\\\"}"
-    s="${s//$'\n'/\\n}"
-    s="${s//$'\r'/\\r}"
-    s="${s//$'\t'/\\t}"
-    printf '%s' "$s"
-}
-
-workflow_orchestrator_escaped=$(escape_for_json "$workflow_orchestrator_content")
-session_context="<EXTREMELY_IMPORTANT>\nYou have spec-superflow powers.\n\n**Below is the full content of your 'spec-superflow:workflow-orchestrator' skill - your introduction to the spec-first workflow:**\n\n${workflow_orchestrator_escaped}\n</EXTREMELY_IMPORTANT>"
+# Lightweight reminder that fits in ~50 tokens. The full workflow-start skill
+# is loaded on demand when the model invokes it.
+session_context="<EXTREMELY_IMPORTANT>\\nYou have spec-superflow powers. When the user says start, continue, resume, plan, implement, or when the workflow stage is unclear, invoke the spec-superflow:workflow-start skill. Do not write planning artifacts before confirming key decisions with the user.\\n</EXTREMELY_IMPORTANT>"
 
 # Output context injection as JSON.
 # Cursor hooks expect additional_context (snake_case).

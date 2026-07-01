@@ -4,6 +4,30 @@ All notable changes to `spec-superflow` will be documented in this file.
 
 The format loosely follows Keep a Changelog.
 
+## [0.8.2] - 2026-07-01
+
+### Added
+
+- **DP-1 and DP-2 implementation** — `need-explorer` now records DP-1 (requirement confirmation) before handing off to `spec-writer`; `spec-writer` now records DP-2 (artifact review) before handing off to `contract-builder`.
+
+### Fixed
+
+- **SessionStart token overhead (issue #5)** — `hooks/session-start` now injects a ~50 token lightweight pointer instead of the full 360-line `workflow-start` SKILL.md, reducing per-session context-window usage by ~2,200 words.
+- **tweak fast-path deadlock** — `guard.mjs` now skips `artifacts-exist` checks for tweak workflow, and `build-executor` accepts tweak mode without requiring `execution-contract.md`. The advertised tweak path now actually works.
+- **State name inconsistency** — `approved` and `approved-for-build` standardized to `approved-for-build` across `guard.mjs`, `cmd-inject.mjs`, `workflow-start`, and `state-machine.md`. Removed duplicate `approved` phase-guard template.
+- **`ssf list` false CLOSED** — `detectChangeStatus` now reads `.spec-superflow.yaml` state instead of inferring closure from file existence. Previously reported BRIDGED changes as CLOSED.
+- **`ssf audit` missing DP-0** — DP-0 (user confirmation gate) now included in audit reports alongside DP-1–DP-7.
+- **Guard `artifacts-exist` config-aware** — now respects `artifacts.skip` from `spec-superflow.config.json`, allowing projects to exclude optional planning artifacts.
+- **Old skill names in guard scripts** — `contract-fresh.mjs` and `tests-passing.mjs` error messages updated to reference `contract-builder` and `release-archivist`.
+- **Sub-prompt path resolution** — `build-executor` and `code-reviewer` now use `${CLAUDE_PLUGIN_ROOT}/skills/<name>/` paths for sub-prompt templates instead of bare filenames.
+- **`ssf validate` coverage** — now validates all 4 planning artifacts (`design.md` and `tasks.md` basic structural checks added).
+- **Config default artifact order** — `execution-contract` removed from `artifacts.order` default (it's `contract-builder`'s output, not `spec-writer`'s).
+- **README state count** — corrected from 7 to 8 states (includes `abandoned`).
+
+### Changed
+
+- **README "不推荐使用" refreshed** — v0.8.x improvements (hotfix, tweak, Batch Inline, reduced token overhead) now cover many previously-excluded scenarios. The "not recommended" section now only lists truly unsuitable cases (throwaway scripts, pure Q&A).
+
 ## [0.8.1] - 2026-07-01
 
 ### Added

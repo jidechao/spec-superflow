@@ -3,7 +3,7 @@ import { readState } from '../../lib/state-loader.mjs';
 
 /**
  * Check that .spec-superflow.yaml records test_result: pass.
- * This field is set by closure-archivist after verification.
+ * This field is set by release-archivist after verification.
  * Returns { pass, failures[] }.
  */
 export function checkTestsPassing(changeDir) {
@@ -13,6 +13,6 @@ export function checkTestsPassing(changeDir) {
   }
   return {
     pass: false,
-    failures: [`test_result is '${state.test_result || 'null'}' — expected 'pass'. Run closure-archivist verification first.`],
+    failures: [`test_result is '${state.test_result || 'null'}' — expected 'pass'. Run release-archivist verification first.`],
   };
 }
