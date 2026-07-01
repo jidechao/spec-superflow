@@ -261,3 +261,5 @@ export async function run(args) {
     console.log(`   Change: ${state.change_name} | State: ${state.state} | Workflow: ${state.workflow}`);
   }
 }
+
+export { generatePhaseGuard, toCursorMdc, toCopilotInstructions };

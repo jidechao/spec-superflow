@@ -41,6 +41,8 @@ function detectChangeStatus(changeDir) {
   return { status: 'UNKNOWN', detail: 'Has artifacts but no state file — run ssf state init' };
 }
 
+export { detectChangeStatus };
+
 export async function run(args) {
   const config = loadConfig(process.cwd());
   const changesDir = join(process.cwd(), 'changes');

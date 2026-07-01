@@ -87,30 +87,22 @@ async function main() {
     process.exit(0);
   }
 
+  const CHECK_RUNNERS = {
+    'artifacts-exist': (dir) => checkArtifactsExist(dir),
+    'schema-valid': async (dir) => (await import('./checks/schema-valid.mjs')).checkSchemaValid(dir),
+    'contract-fresh': (dir) => checkContractFresh(dir),
+    'tasks-complete': (dir) => checkTasksComplete(dir),
+    'tests-passing': (dir) => checkTestsPassing(dir),
+  };
+
   const checks = [];
   let pass = true;
 
   for (const dim of dimensions) {
-    let result;
-    switch (dim) {
-      case 'artifacts-exist':
-        result = checkArtifactsExist(changeDir);
-        break;
-      case 'schema-valid':
-        result = await (await import('./checks/schema-valid.mjs')).checkSchemaValid(changeDir);
-        break;
-      case 'contract-fresh':
-        result = checkContractFresh(changeDir);
-        break;
-      case 'tasks-complete':
-        result = checkTasksComplete(changeDir);
-        break;
-      case 'tests-passing':
-        result = checkTestsPassing(changeDir);
-        break;
-      default:
-        result = { pass: false, failures: [`Unknown dimension: ${dim}`] };
-    }
+    const runner = CHECK_RUNNERS[dim];
+    const result = runner
+      ? await runner(changeDir)
+      : { pass: false, failures: [`Unknown dimension: ${dim}`] };
     checks.push({ dimension: dim, pass: result.pass, failures: result.failures || [] });
     if (!result.pass) pass = false;
   }

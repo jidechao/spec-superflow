@@ -75,6 +75,8 @@ function basename(p) {
   return parts[parts.length - 1] || 'unknown';
 }
 
+export { generateReport, DP_NAMES };
+
 export async function run(args) {
   const { values, positionals } = parseArgs({
     args,

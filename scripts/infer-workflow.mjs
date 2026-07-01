@@ -69,6 +69,15 @@ function inferMode(changeDir) {
   const codeFileCount = allExts.filter(e => CODE_EXTS.has(e)).length;
   const configDocOnly = codeFileCount === 0 && allExts.every(e => CONFIG_DOC_EXTS.has(e));
 
+  // No artifacts → safe default to full
+  if (taskCount === 0 && fileCount === 0) {
+    return {
+      mode: 'full',
+      explicit: false,
+      reason: 'no planning artifacts detected → full (safe default)',
+    };
+  }
+
   // Hotfix: very small, no schema/api, no new module
   if (taskCount <= 2 && fileCount <= 2 && !hasSchemaChange && !hasNewModule) {
     return {

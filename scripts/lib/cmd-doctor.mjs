@@ -191,3 +191,5 @@ export async function run(args) {
     console.log('✅ All checks passed.');
   }
 }
+
+export { checkVersionConsistency, checkHooks, checkSkills, checkDist, checkRootPluginAuthor, checkNodeVersion, checkDocs };

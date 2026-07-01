@@ -76,27 +76,26 @@ export async function run(args) {
     }
   }
 
-  // Basic structural validation for design.md
-  const designPath = join(changeDir, 'design.md');
-  if (existsSync(designPath)) {
-    const content = readFileSync(designPath, 'utf-8').trim();
-    const issues = [];
-    if (content.length < 50) issues.push({ level: 'ERROR', path: 'design.md', message: 'design.md is too short (< 50 chars) — provide architecture decisions, trade-offs, and data flow' });
-    if (!content.includes('##')) issues.push({ level: 'WARNING', path: 'design.md', message: 'design.md has no section headings — consider adding ## Architecture, ## Data Flow, ## Error Handling' });
-    const report = { valid: issues.filter(i => i.level === 'ERROR').length === 0, issues, summary: { errors: issues.filter(i => i.level === 'ERROR').length, warnings: issues.filter(i => i.level === 'WARNING').length, info: 0 } };
-    printReport('design.md', report);
-    if (!report.valid) hasErrors = true;
-  }
+  // Basic structural validation for design.md and tasks.md (shared pattern)
+  const STRUCTURAL_CHECKS = [
+    { file: 'design.md', errorMsg: 'design.md is too short (< 50 chars) — provide architecture decisions, trade-offs, and data flow', warningMsg: 'design.md has no section headings — consider adding ## Architecture, ## Data Flow, ## Error Handling' },
+    { file: 'tasks.md', errorMsg: 'tasks.md is too short (< 50 chars) — provide actionable, ordered implementation tasks', warningMsg: 'tasks.md has no section headings — consider adding ## File Structure and ## Tasks' },
+  ];
 
-  // Basic structural validation for tasks.md
-  const tasksPath = join(changeDir, 'tasks.md');
-  if (existsSync(tasksPath)) {
-    const content = readFileSync(tasksPath, 'utf-8').trim();
+  for (const { file, errorMsg, warningMsg } of STRUCTURAL_CHECKS) {
+    const filePath = join(changeDir, file);
+    if (!existsSync(filePath)) continue;
+
+    const content = readFileSync(filePath, 'utf-8').trim();
     const issues = [];
-    if (content.length < 50) issues.push({ level: 'ERROR', path: 'tasks.md', message: 'tasks.md is too short (< 50 chars) — provide actionable, ordered implementation tasks' });
-    if (!content.includes('##')) issues.push({ level: 'WARNING', path: 'tasks.md', message: 'tasks.md has no section headings — consider adding ## File Structure and ## Tasks' });
-    const report = { valid: issues.filter(i => i.level === 'ERROR').length === 0, issues, summary: { errors: issues.filter(i => i.level === 'ERROR').length, warnings: issues.filter(i => i.level === 'WARNING').length, info: 0 } };
-    printReport('tasks.md', report);
+    if (content.length < 50) issues.push({ level: 'ERROR', path: file, message: errorMsg });
+    if (!content.includes('##')) issues.push({ level: 'WARNING', path: file, message: warningMsg });
+    const report = {
+      valid: issues.filter(i => i.level === 'ERROR').length === 0,
+      issues,
+      summary: { errors: issues.filter(i => i.level === 'ERROR').length, warnings: issues.filter(i => i.level === 'WARNING').length, info: 0 },
+    };
+    printReport(file, report);
     if (!report.valid) hasErrors = true;
   }
 
