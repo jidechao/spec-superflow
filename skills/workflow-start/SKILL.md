@@ -1,5 +1,5 @@
 ---
-name: workflow-orchestrator
+name: workflow-start
 description: Primary entry point for spec-superflow. Invoke when the user says start, continue, resume, implement, plan, or when the current workflow stage is unclear and the next skill must be chosen safely.
 ---
 

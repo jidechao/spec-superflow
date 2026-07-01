@@ -1,5 +1,5 @@
 ---
-name: spec-explorer
+name: need-explorer
 description: Clarify intent, scope, constraints, and success criteria before artifact creation. Invoke when the request is fuzzy, the user is comparing options, or the workflow needs a stable change definition before writing artifacts.
 ---
 

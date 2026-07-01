@@ -1,5 +1,5 @@
 ---
-name: spec-syncer
+name: spec-merger
 description: Sync delta specs to main specs after closure. Invoke when a change is closing, delta specs need merging into the main spec base, or when detecting spec drift across multiple changes.
 ---
 

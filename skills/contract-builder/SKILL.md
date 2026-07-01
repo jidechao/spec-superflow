@@ -1,5 +1,5 @@
 ---
-name: bridge-contract
+name: contract-builder
 description: Convert approved planning artifacts into an execution contract. Invoke when the user wants to start building, asks to move from planning to implementation, or when `execution-contract.md` is missing or stale.
 ---
 

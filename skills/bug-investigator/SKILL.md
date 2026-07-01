@@ -1,5 +1,5 @@
 ---
-name: systematic-debugger
+name: bug-investigator
 description: Use when encountering any bug, test failure, or unexpected behavior during spec-superflow execution, before proposing fixes. Invoked automatically when execution-governor hits a blockage.
 ---
 

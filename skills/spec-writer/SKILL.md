@@ -1,5 +1,5 @@
 ---
-name: spec-forger
+name: spec-writer
 description: Create or refine spec-superflow planning artifacts. Invoke when the change is understood well enough to write `proposal.md`, `specs/`, `design.md`, and `tasks.md`.
 ---
 

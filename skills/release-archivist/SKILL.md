@@ -1,5 +1,5 @@
 ---
-name: closure-archivist
+name: release-archivist
 description: Close out a spec-superflow change with verification, summary, and archive readiness. Invoke when implementation is complete, verification is underway, or the user asks for a final wrap-up.
 ---
 

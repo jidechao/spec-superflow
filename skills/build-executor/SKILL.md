@@ -1,5 +1,5 @@
 ---
-name: execution-governor
+name: build-executor
 description: Govern implementation from an approved execution contract. Invoke when `execution-contract.md` is approved and the user wants disciplined build work, TDD execution, or guarded batch-by-batch implementation.
 ---
 
