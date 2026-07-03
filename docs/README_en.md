@@ -1,341 +1,223 @@
-# spec-superflow
+<h1 align="center">spec-superflow</h1>
 
-`spec-superflow` is a self-contained workflow integration plugin for AI coding agents.
+<p align="center">
+  <strong>A self-contained AI coding workflow plugin fusing OpenSpec planning + Superpowers execution discipline</strong>
+</p>
 
-It combines:
+<p align="center">
+  <a href="../LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT License"></a>
+  <a href="https://github.com/MageByte-Zero/spec-superflow/stargazers"><img src="https://img.shields.io/github/stars/MageByte-Zero/spec-superflow" alt="GitHub Stars"></a>
+  <a href="https://www.npmjs.com/package/spec-superflow"><img src="https://img.shields.io/npm/v/spec-superflow" alt="npm version"></a>
+</p>
 
-- OpenSpec-style artifact thinking: `proposal.md`, `specs/`, `design.md`, `tasks.md`
-- Superpowers-style execution discipline: guardrails, TDD, review gates, controlled handoff
+<p align="center">
+  <a href="#quick-start">Quick Start</a> |
+  <a href="#installation">Install</a> |
+  <a href="#why">Why</a> |
+  <a href="#core-skills">Skills</a> |
+  <a href="#workflow">Workflow</a> |
+  <a href="../README.md">中文</a> |
+  <a href="showcase.html">Showcase</a> |
+  <a href="#faq">FAQ</a>
+</p>
 
-The key idea:
+---
 
-```text
-clarify -> specify -> bridge -> execute -> close
-```
+## Quick Start
 
-Instead of requiring users to install both upstream systems and manually stitch them together, `spec-superflow` absorbs the useful parts of each and exposes one coherent workflow.
-
-## Why It Exists
-
-Most AI coding sessions fail in one of two ways:
-
-1. The AI starts writing code before "what we are building" is stable.
-2. The team does define the change, but implementation still drifts because testing, review, and handoff are too loose.
-
-`spec-superflow` addresses both:
-
-- `need-explorer` and `spec-writer` make the change explicit.
-- `contract-builder` turns planning artifacts into an `execution-contract.md`.
-- `build-executor` treats that contract as the approved source for implementation behavior.
-
-## When to Use
-
-### ✅ Good Fit
-
-| Scenario | Why |
-|----------|-----|
-| **Large feature development** | Needs explicit planning, review gates, and test discipline to prevent drift |
-| **Multi-person collaboration** | `execution-contract.md` provides clear contracts and review standards |
-| **Long-term maintenance** | `spec-merger` prevents spec rot; delta specs support continuous evolution |
-| **TDD + Review Gate required** | Built-in TDD Iron Law + SDD subagent-driven + dual review |
-| **Brownfield projects** | `need-explorer` inspects existing code before planning changes |
-| **Need for planning stability** | `contract-builder` ensures planning is stable before implementation begins |
-
-### ❌ Not a Good Fit
-
-| Scenario | Why | Alternative |
-|----------|-----|-------------|
-| **Quick prototype / Demo** | Workflow is heavy, high token cost | Use Claude Code default behavior |
-| **Small changes (< 100 lines)** | 9 skills + 7 states is overkill | Just edit code + test |
-| **Exploratory development** | Planning changes frequently, contract goes stale fast | Use `need-explorer` alone, skip full workflow |
-| **Personal experimental project** | Review gates and archiving add burden | Use Superpowers or OpenSpec alone |
-| **Pure bug fix** | No planning phase needed | Use `bug-investigator` alone |
-| **Learning / experimenting with new tools** | Workflow restricts exploration freedom | Just experiment directly |
-
-### 💡 Rule of Thumb
-
-> **If you can figure out a change without writing a proposal and design doc, spec-superflow is probably too heavy for it.**
->
-> Quick test: If you'd spend more than 5 minutes explaining the change in a team standup, spec-superflow is worth it.
-
-## Recommended Usage
-
-### The Single Entry Point
-
-**Everything starts from `workflow-start`.**
-
-Whenever you begin or resume a change, just tell your agent:
+Once installed, just tell your agent:
 
 ```
-use workflow-start to start
+use workflow-start to begin
 ```
 
-`workflow-start` inspects the current artifact directory, determines which stage you're in, and routes to the correct next skill. You don't need to memorize six skill names or manually figure out "what should I do next" — the entry point handles it.
+The agent inspects your current artifacts, performs **content-level detection** (comparing proposal scope vs. contract intent lock, not just file timestamps), determines your workflow stage, and routes to the correct next skill.
 
-### Full Flow: Six States, One Pipeline
+- New change → `use workflow-start to begin`
+- Resume work → `continue the workflow`
+- Unsure → `check what state we're in`
+
+## Installation
+
+### Claude Code (Primary)
+
+Via the official plugin marketplace:
+
+```bash
+/plugin marketplace add MageByte-Zero/spec-superflow
+/plugin install spec-superflow@spec-superflow
+/plugin update spec-superflow@spec-superflow   # upgrade
+```
+
+### Cursor
+
+```bash
+npx spec-superflow@latest install-cursor
+
+# Or via marketplace (submitted, pending review):
+# /add-plugin spec-superflow
+```
+
+### Gemini CLI
+
+```bash
+gemini extensions install https://github.com/MageByte-Zero/spec-superflow
+gemini extensions update spec-superflow   # upgrade
+```
+
+### GitHub Copilot CLI
+
+```bash
+copilot plugin marketplace add MageByte-Zero/spec-superflow-marketplace
+copilot plugin install spec-superflow@spec-superflow-marketplace
+```
+
+### Other Platforms
+
+| Platform | Method | Status |
+|----------|--------|--------|
+| **OpenAI Codex CLI** | Community: `codex plugin marketplace add hashgraph-online/awesome-codex-plugins` | PR submitted |
+| **OpenCode / Trae** | `git clone` → symlink `skills/` | Manual setup |
+
+> Full installation guide: [INSTALL.md](../INSTALL.md)
+
+### CLI Toolchain
+
+```bash
+npm install -g spec-superflow
+```
+
+| Command | Purpose |
+|---------|---------|
+| `ssf list` | List all changes and status |
+| `ssf validate <dir>` | Validate artifact completeness |
+| `ssf doctor` | Health check (versions, hooks, skills, docs) |
+| `ssf version <semver>` | Sync version across all manifests |
+| `ssf state <sub> <dir>` | Manage `.spec-superflow.yaml` state file |
+| `ssf inject <dir>` | Generate multi-platform phase-guard artifacts |
+| `ssf audit <dir>` | Generate decision-point audit report |
+| `ssf install-cursor` | Deploy to `.cursor/` directory |
+
+### Version
+
+- Current: `v0.8.5`
+- Self-contained — no OpenSpec or Superpowers runtime required
+- Upstream: [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec), [obra/superpowers](https://github.com/obra/superpowers)
+- Changelog: [CHANGELOG.md](../CHANGELOG.md)
+
+---
+
+## Why
+
+AI coding sessions fail in one of two ways:
+
+- **The AI starts coding before you've decided what to build.** You say "add authorization" and it touches 40 files before you realize — RBAC or ABAC?
+
+- **The plan is solid, but execution drifts.** The proposal, specs, and design are written, but nobody enforces testing, nobody gates reviews, and by merge time the behavior doesn't match.
+
+**spec-superflow builds a hard wall between these two failure points:** intent exploration → formal artifacts (Schema-validated) → execution contract bridge → TDD + SDD + Review Gate enforcement → verified closure → delta spec sync to prevent spec rot.
+
+| Principle | Meaning |
+|---|---|
+| Spec First | No stable planning artifacts → implementation blocked |
+| Guarded Handoff | `execution-contract.md` is the only bridge to implementation |
+| Strong Guardrails | Contract violations intercepted and rolled back |
+| Schema Validated | Planning artifacts validated by embedded engine |
+| Execute Disciplined | TDD Iron Law + SDD subagents + Review Gates |
+| Self-Contained | No external runtime dependencies |
+
+### When to Use
+
+**✅ Recommended:** Large features, multi-person collaboration, long-term maintenance, brownfield projects needing TDD + review gates.
+
+**❌ Skip:** One-off scripts, pure Q&A conversations.
+
+> **v0.6.0+ auto mode detection:** hotfix (≤2 files, skips planning) and tweak (≤4 files, config/docs only, skips planning + bridging) make lightweight changes efficient too.
+
+---
+
+## Core Skills
+
+| # | Skill | Stage | Purpose |
+|---|-------|-------|---------|
+| 1 | `workflow-start` | Entry | Content-level state detection, 8-state routing, blocks illegal transitions |
+| 2 | `need-explorer` | Exploring | One question at a time, approach comparison, recommendation |
+| 3 | `spec-writer` | Specifying | Generate proposal/specs/design/tasks with Schema engine validation |
+| 4 | `contract-builder` | Bridging | Parse 4 artifacts → compress into execution-contract.md |
+| 5 | `build-executor` | Executing | TDD Iron Law + SDD subagent-driven + Review Gates |
+| 6 | `bug-investigator` | Debugging | 4-phase root cause analysis; 3+ failures → escalate |
+| 7 | `code-reviewer` | Review | Structured review with 3-level severity classification |
+| 8 | `release-archivist` | Closing | Verification-before-completion + archive + risk summary |
+| 9 | `spec-merger` | Syncing | Delta spec → main spec merge with conflict detection |
+
+---
+
+## Workflow
 
 ```text
 You: "add authorization to the API"
        │
        ▼
-┌──────────────────────────┐
-│  workflow-start    │  ← Single entry. Inspects state, routes forward
-└──────┬───────────────────┘
+   workflow-start     ← Single entry. Content-level detection, routes to correct skill
        │
        ▼
-   exploring         need-explorer asks: "RBAC or ABAC?" "What granularity?" "Which endpoints?"
+   exploring          need-explorer: "RBAC or ABAC? What granularity?"
+       ▼
+   specifying         spec-writer generates 4 artifacts + Schema validation
+       ▼
+   bridging           contract-builder auto-extracts → execution-contract.md
+       │
+  ◇ User Approval ◇   ← The only human gate
        │
        ▼
-   specifying        spec-writer produces 4 artifacts: proposal + specs + design + tasks
+   executing          build-executor: TDD → SDD → Review Gate
        │
+       ├──[bug]──→ debugging  → bug-investigator
        ▼
-   bridging          contract-builder compresses 4 artifacts into 1 execution-contract.md
-       │                 ┌────────────────────────────────────────┐
-       │                 │ execution-contract.md                  │
-       │                 │  - Input / Output / Boundaries         │
-       │                 │  - Per-item test checklist             │
-       │                 │  - Review gates                        │
-       │                 └────────────────────────────────────────┘
-       │
-  ◇ User Approval ◇   ← The only human gate: you review, confirm, say "approved"
-       │
+   closing            release-archivist: verify + archive
        ▼
-   executing         build-executor enforces TDD, review gates, contract compliance
-       │
-       ▼
-   closing           release-archivist verifies, summarizes, archives
+   syncing            spec-merger (delta specs → main specs)
 ```
 
-**Hard constraints:**
+**Hard constraints:** No `execution-contract.md` or no approval → implementation blocked. Requirements change mid-execution → forced rollback. Bug encountered → must enter debugging state, no ad-hoc fixes.
 
-- No `execution-contract.md` or no user approval → **implementation is blocked**
-- Violating the contract during implementation → **intercepted and rolled back**, not left to developer intuition
-- Requirements change mid-execution → **forced rollback to `specifying` or `bridging`**, no silent scope creep
+### Fast Paths (hotfix / tweak)
 
-### The Superpower: Truly Integrating OpenSpec + Superpowers
+- **hotfix** — ≤2 files, no new modules → minimal contract → inline execution
+- **tweak** — ≤4 files, config/docs only → skip planning + bridging, direct edit
 
-Most AI coding workflows fall into two camps:
-
-| Camp | Example | Strength | Weakness |
-|---|---|---|---|
-| Planning-first | OpenSpec | Clean proposal, specs, design, tasks | Stops at documentation. Implementation runs unguarded |
-| Discipline-first | Superpowers | TDD, review gates, subagent-driven dev | No formal planning layer. No hard judgment on "is the spec stable?" |
-
-**spec-superflow bridges both worlds:**
-
-```text
-OpenSpec strengths                 Superpowers strengths
-    │                                    │
-    │  proposal                          │  brainstorming
-    │  specs                             │  TDD
-    │  design                            │  review gates
-    │  tasks                             │  subagent-driven-dev
-    │                                    │
-    └──────────┬─────────────────────────┘
-               │
-               ▼
-      ┌─────────────────────┐
-      │  execution-contract  │  ← spec-superflow's bridge layer
-      │  .md                 │     Planning artifacts compressed into
-      └─────────────────────┘     verifiable contract.
-               │                  Execution discipline only activates
-               ▼                  against approved contract.
-        Planning is no longer just reference material.
-        Execution no longer drifts on its own.
-```
-
-In concrete terms:
-
-1. **Absorbs OpenSpec's planning capability** — proposal, specs, design, tasks as formal artifacts, not the end of the process
-2. **Absorbs Superpowers' execution discipline** — TDD, review gates, violation interception, but requires an approved contract to activate
-3. **`execution-contract.md` is the unique innovation** — not another planning doc, but a **verifiable contract**: inputs/outputs/boundaries/test checklist/review gates, each item checkable during implementation
-4. **Self-Contained** — no OpenSpec install, no Superpowers install. One plugin, one workflow owner.
-
-## Core Skills
-
-| Skill | Stage | Responsibility |
-|---|---|---|
-| `workflow-start` | Entry | Inspect state, route to correct skill, block invalid transitions |
-| `need-explorer` | Exploring | Clarify intent, scope, constraints, and success criteria |
-| `spec-writer` | Specifying | Generate proposal, specs, design, and tasks |
-| `contract-builder` | Bridging | Convert planning artifacts into `execution-contract.md` |
-| `build-executor` | Executing | Enforce TDD, review gates, and contract-first implementation |
-| `release-archivist` | Closing | Verify, summarize, and prepare for archive |
-
-## Install
-
-Supports **Claude Code / Cursor / OpenAI Codex CLI / OpenAI Codex App / GitHub Copilot CLI / Gemini CLI**.
-
-Any client that can load a local `skills/` directory can use the same repository clone flow, including OpenCode, Trae, Qoder, and Trae CN.
-
-**Claude Code:**
-
-```
-/plugin marketplace add MageByte-Zero/spec-superflow
-/plugin install spec-superflow@spec-superflow
-```
-
-**Cursor:**
-
-```
-/add-plugin spec-superflow
-```
-
-**OpenAI Codex CLI:**
-
-```bash
-codex plugin marketplace add MageByte-Zero/spec-superflow
-codex plugin add spec-superflow@spec-superflow
-```
-
-`spec-superflow` is not part of the OpenAI curated marketplace, so add this repository as a marketplace first.
-
-**OpenAI Codex App:**
-
-Run the Codex CLI marketplace commands above, restart the Codex app, then open **Plugins** and switch to the `spec-superflow` marketplace.
-
-**OpenCode:**
-
-```bash
-git clone https://github.com/MageByte-Zero/spec-superflow.git
-mkdir -p your-project/.agents
-ln -s /absolute/path/to/spec-superflow/skills your-project/.agents/skills
-```
-
-**GitHub Copilot CLI:**
-
-```
-copilot plugin marketplace add MageByte-Zero/spec-superflow
-copilot plugin install spec-superflow@spec-superflow
-```
-
-**Gemini CLI:**
-
-```
-gemini extensions install https://github.com/MageByte-Zero/spec-superflow
-```
-
-**Trae:**
-
-```bash
-git clone https://github.com/MageByte-Zero/spec-superflow.git
-mkdir -p ~/.trae/skills
-cp -R spec-superflow/skills/* ~/.trae/skills/
-```
-
-All install methods: [INSTALL.md](INSTALL.md)
-
-## Quick Start
-
-1. Install the plugin (see above).
-2. Create or choose a change workspace under `workflow/changes/<change-name>/`.
-3. Start from `workflow-start`.
-4. Let the workflow move through exploration, specification, bridging, execution, and closure.
-
-## Version Notes
-
-- Current release: `v0.6.0`
-- `spec-superflow` is self-contained and does not require runtime installation of OpenSpec or Superpowers
-- Upstream source projects: [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) and [obra/superpowers](https://github.com/obra/superpowers)
-
-## How To Use
-
-### 1. Start from the orchestrator
-
-Ask the agent to use `workflow-start` when:
-
-- starting a new change
-- resuming an old change
-- deciding what stage the work is in
-
-### 2. Let the workflow move through five artifact steps
-
-For a change named `<change-name>`, the plugin expects:
-
-```text
-workflow/
-└── changes/<change-name>/
-    ├── proposal.md
-    ├── design.md
-    ├── tasks.md
-    ├── specs/
-    │   └── <capability>.md
-    └── execution-contract.md
-```
-
-### 3. Use one workflow owner
-
-Do not ask the same session to separately run:
-
-- OpenSpec workflow commands
-- Superpowers workflow entry points
-- `spec-superflow` orchestration
-
-Pick `spec-superflow` as the visible workflow owner and let it absorb the rest.
-
-### 4. Let the contract gate execution
-
-Planning alone does not authorize implementation.
-
-The intended handoff is:
-
-```text
-proposal/specs/design/tasks -> execution-contract.md -> approved build work
-```
-
-If the contract is missing, stale, or unapproved, route back instead of coding forward.
-
-## Included Templates
-
-Templates live in `templates/`:
-
-- `proposal.md`
-- `spec.md`
-- `design.md`
-- `tasks.md`
-- `execution-contract.md`
-
-## Example Workflow
-
-Two complete change sets demonstrate the full progression from proposal to execution contract:
-
-- `docs/examples/add-dark-mode/` -- net-new UI capability (dark mode)
-- `docs/examples/refactor-auth-boundary/` -- brownfield backend refactor (auth layer)
-
-Read each in artifact order: `proposal.md` -> `specs/` -> `design.md` -> `tasks.md` -> `execution-contract.md`.
+---
 
 ## FAQ
 
 <details>
-<summary><strong>What's the difference between spec-superflow and OpenSpec / Superpowers?</strong></summary>
+<summary><strong>How is this different from OpenSpec or Superpowers?</strong></summary>
 
-OpenSpec focuses on planning artifacts (proposal, specs, design, tasks). Superpowers focuses on execution discipline (TDD, review gates, subagent-driven development). spec-superflow merges both into one workflow: plan first, bridge through an execution contract, then build under guardrails.
+spec-superflow is a source-level fusion, not side-by-side installation. It absorbs OpenSpec's Schema/validation/parsing engine and Superpowers' TDD/SDD/debugging/review discipline, while adding a unique contract-builder bridge layer and 8-state routing. Self-contained — no upstream runtimes needed.
 
-You do not need to install OpenSpec or Superpowers at runtime.
 </details>
 
 <details>
-<summary><strong>Can I use this with existing OpenSpec change folders?</strong></summary>
+<summary><strong>Can I use this alongside existing OpenSpec or Superpowers?</strong></summary>
 
-Partially. If your folder already has proposal, specs, design, and tasks, you can run contract-builder to generate the execution contract. The folder structure is compatible. However, mixing OpenSpec CLI commands with spec-superflow skills in the same session is not recommended -- pick one workflow owner.
+Not recommended in the same session. Projects with existing OpenSpec artifacts can be adopted directly — `contract-builder` reads your existing proposal/specs/design/tasks to generate the execution contract.
+
 </details>
 
 <details>
-<summary><strong>Does this work with brownfield / existing codebases?</strong></summary>
+<summary><strong>How does the execution contract detect staleness?</strong></summary>
 
-Yes. The workflow does not assume a greenfield project. The need-explorer inspects the current project context before asking clarifying questions. See the `refactor-auth-boundary` example for a brownfield scenario.
+Content-level detection, not timestamps: proposal scope changed, approved spec behavior changed, design constraints changed, or task batches changed → contract marked stale → route back to `contract-builder`.
+
 </details>
 
-## Current Status
+<details>
+<summary><strong>How does SDD (Subagent-Driven Development) work?</strong></summary>
 
-**v0.2.0** (2026-06-26) — Open-source announcement ready.
+Per-task loop: dispatch implementer subagent → generate review diff → dispatch reviewer subagent → dual verdict (spec compliance + code quality) → fail → fix → re-review. Progress ledger prevents session-compression loss.
 
-- ✅ TypeScript engine with strict compilation (`npm run build`)
-- ✅ Integration test suite using real example artifacts (`npm test`)
-- ✅ 9 collaborative skills with complete workflow coverage
-- ✅ Multi-agent packaging (Claude Code / Cursor / Codex / Copilot CLI / Gemini CLI + local skills clients)
-- ✅ Self-contained: zero external npm dependencies
-- ✅ Two complete example change sets (add-dark-mode, refactor-auth-boundary)
-- ✅ MIT license, CONTRIBUTING.md, and installation guide included
+</details>
 
-See [CHANGELOG.md](../CHANGELOG.md) for detailed release notes.
+---
+
+**Star the repo — find it when you need it.**
