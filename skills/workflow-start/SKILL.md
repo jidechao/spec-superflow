@@ -1,6 +1,6 @@
 ---
 name: workflow-start
-description: Primary entry point for spec-superflow. Invoke when the user says start, continue, resume, implement, plan, or when the current workflow stage is unclear and the next skill must be chosen safely.
+description: Primary entry point for the spec-superflow state-machine workflow. Invoke when the user is inside an active spec-superflow change directory (look for `.spec-superflow.yaml`, `changes/<name>/`, `proposal.md`, `specs/`, `design.md`, `tasks.md`, or `execution-contract.md`) and asks to start, continue, resume, implement, plan, or figure out the next workflow step. Also invoke when the user explicitly asks to start a new spec-superflow change or route through the spec-superflow workflow. Do not invoke for unrelated coding tasks that happen to use words like start, continue, implement, or plan.
 ---
 
 # Workflow Start
@@ -18,17 +18,23 @@ Its job is not to implement anything directly. Its job is to:
 
 ## Use This Skill When
 
-Invoke this skill first when the user says things like:
+Only invoke this skill when spec-superflow context is clearly present. Before invoking, verify that at least one of these conditions holds:
 
-- "continue"
-- "resume this change"
-- "start a new workflow"
-- "help me figure out what to do next"
-- "begin implementation"
-- "let's write the spec"
-- "we already planned this, now build it"
+**Active change in progress (check the workspace):**
+- `.spec-superflow.yaml` exists in the project
+- Artifacts like `proposal.md`, `specs/`, `design.md`, `tasks.md`, or `execution-contract.md` are present
+- The user is continuing/resuming a task that was previously managed through the spec-superflow workflow
 
-Use it whenever the correct next skill is not obvious from the current artifacts.
+**User explicitly invokes spec-superflow:**
+- User mentions "spec-superflow" by name, or types `/spec-superflow:workflow-start`
+- User explicitly asks to "start a spec-superflow change" or "route through the workflow"
+
+**Do NOT invoke this skill when:**
+- The user asks to "start", "continue", "implement", or "plan" a task that is NOT inside a spec-superflow managed change
+- The user asks to write code, fix a bug, refactor, or implement a feature without spec-superflow artifacts present
+- The user is asking a general question, making a casual request, or working on something unrelated
+
+When in doubt, check for `.spec-superflow.yaml` first. If it doesn't exist and the user hasn't mentioned spec-superflow by name, do NOT invoke this skill — handle the request directly.
 
 ## Default States
 
