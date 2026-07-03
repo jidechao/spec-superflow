@@ -1,9 +1,15 @@
 #!/usr/bin/env node
-// scripts/install-cursor.mjs — deploy spec-superflow skills/rules for Cursor Agent
+// scripts/install-cursor.mjs — deploy spec-superflow for Cursor Agent
+//
+// Copies the full plugin tree (skills + scripts + docs + templates + dist + hooks)
+// to .cursor/spec-superflow/ so that skill instructions referencing
+// ${CLAUDE_PLUGIN_ROOT}/scripts/... and ${CLAUDE_PLUGIN_ROOT}/docs/... resolve
+// correctly. Also copies skills to .cursor/skills/ (where Cursor reads them).
+//
 // Defaults to the latest GitHub release; use --local <path> to deploy from a local repo.
-import { existsSync, mkdirSync, readdirSync, statSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, rmSync, readFileSync, writeFileSync } from 'node:fs';
 import { cp, writeFile, mkdtemp } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
@@ -14,6 +20,9 @@ const targetRoot = process.cwd();
 
 const GITHUB_REPO = 'MageByte-Zero/spec-superflow';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+
+// Directories needed at runtime by skills (referenced via ${CLAUDE_PLUGIN_ROOT})
+const RUNTIME_DIRS = ['scripts', 'docs', 'templates', 'dist', 'hooks'];
 
 function ensureDir(dir) {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
@@ -41,8 +50,32 @@ async function cloneRelease(tag) {
   return tmpDir;
 }
 
-async function copySkills(sourceSkills, targetSkills) {
-  // Clean old skill directories before copying to prevent stale v0.7 names accumulating
+/**
+ * Recursively copy a directory.
+ */
+async function copyDir(src, dst) {
+  if (!existsSync(src)) return 0;
+  ensureDir(dst);
+  const entries = readdirSync(src);
+  for (const name of entries) {
+    const srcPath = join(src, name);
+    const dstPath = join(dst, name);
+    const st = statSync(srcPath);
+    if (st.isDirectory()) {
+      await copyDir(srcPath, dstPath);
+    } else {
+      await cp(srcPath, dstPath, { force: true });
+    }
+  }
+  return entries.length;
+}
+
+/**
+ * Copy skills to target, replacing ${CLAUDE_PLUGIN_ROOT} with the actual
+ * plugin root path so skill instructions work in Cursor's environment.
+ */
+async function copySkillsWithRoot(sourceSkills, targetSkills, pluginRootAbs) {
+  // Clean old skill directories before copying
   if (existsSync(targetSkills)) {
     const oldEntries = readdirSync(targetSkills).filter(name => {
       const full = join(targetSkills, name);
@@ -62,6 +95,26 @@ async function copySkills(sourceSkills, targetSkills) {
     const src = join(sourceSkills, name);
     const dst = join(targetSkills, name);
     await cp(src, dst, { recursive: true, force: true });
+
+    // Replace ${CLAUDE_PLUGIN_ROOT} with the absolute path so commands work
+    const skillMd = join(dst, 'SKILL.md');
+    if (existsSync(skillMd)) {
+      let content = readFileSync(skillMd, 'utf-8');
+      if (content.includes('${CLAUDE_PLUGIN_ROOT}')) {
+        content = content.replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, pluginRootAbs);
+        writeFileSync(skillMd, content, 'utf-8');
+      }
+    }
+    // Also fix sub-prompt files (implementer-prompt.md, etc.)
+    const subFiles = readdirSync(dst).filter(f => f.endsWith('.md') && f !== 'SKILL.md');
+    for (const sub of subFiles) {
+      const subPath = join(dst, sub);
+      let content = readFileSync(subPath, 'utf-8');
+      if (content.includes('${CLAUDE_PLUGIN_ROOT}')) {
+        content = content.replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, pluginRootAbs);
+        writeFileSync(subPath, content, 'utf-8');
+      }
+    }
   }
 
   return entries.length;
@@ -103,6 +156,23 @@ alwaysApply: true
   await writeFile(join(targetRules, 'phase-guard.mdc'), content, 'utf-8');
 }
 
+async function writeCursorHooks(hooksDir) {
+  ensureDir(join(targetRoot, '.cursor'));
+  const hooksJson = {
+    hooks: [
+      {
+        event: 'sessionStart',
+        command: `bash ${join(hooksDir, 'session-start')}`,
+      },
+    ],
+  };
+  await writeFile(
+    join(targetRoot, '.cursor', 'hooks.json'),
+    JSON.stringify(hooksJson, null, 2) + '\n',
+    'utf-8',
+  );
+}
+
 async function main() {
   const { values } = parseArgs({
     options: {
@@ -116,7 +186,7 @@ async function main() {
   let installedTag = null;
 
   if (values.local) {
-    pluginRoot = values.local;
+    pluginRoot = resolve(values.local);
     console.log(`📁 Using local repo: ${pluginRoot}`);
   } else {
     installedTag = values.tag || await fetchLatestTag();
@@ -132,19 +202,42 @@ async function main() {
     process.exit(1);
   }
 
-  const targetCursor = join(targetRoot, '.cursor');
-  const targetSkills = join(targetCursor, 'skills');
-  const targetRules = join(targetCursor, 'rules');
+  // Target paths
+  const targetPluginDir = join(targetRoot, '.cursor', 'spec-superflow');
+  const targetSkills = join(targetRoot, '.cursor', 'skills');
+  const targetRules = join(targetRoot, '.cursor', 'rules');
+  const pluginRootAbs = resolve(targetPluginDir);
 
   try {
-    const count = await copySkills(sourceSkills, targetSkills);
-    await writePhaseGuard(targetRules);
+    // 1. Copy runtime dependencies to .cursor/spec-superflow/
+    console.log('📋 Copying runtime dependencies...');
+    for (const dir of RUNTIME_DIRS) {
+      const src = join(pluginRoot, dir);
+      const dst = join(targetPluginDir, dir);
+      if (existsSync(src)) {
+        const count = await copyDir(src, dst);
+        console.log(`   ${dir}/ → ${dst} (${count} entries)`);
+      } else {
+        console.log(`   ${dir}/ — skipped (not found)`);
+      }
+    }
 
-    console.log(`✅ Cursor install complete:`);
-    console.log(`   - ${count} skills copied to ${targetSkills}`);
-    console.log(`   - phase guard written to ${join(targetRules, 'phase-guard.mdc')}`);
+    // 2. Copy skills to .cursor/skills/ with CLAUDE_PLUGIN_ROOT replaced
+    const count = await copySkillsWithRoot(sourceSkills, targetSkills, pluginRootAbs);
+    console.log(`   skills/ → ${targetSkills} (${count} skills, paths rewritten)`);
+
+    // 3. Write phase guard rule
+    await writePhaseGuard(targetRules);
+    console.log(`   phase guard → ${join(targetRules, 'phase-guard.mdc')}`);
+
+    // 4. Write .cursor/hooks.json for session-start
+    await writeCursorHooks(join(targetPluginDir, 'hooks'));
+    console.log(`   hooks.json → ${join(targetRoot, '.cursor', 'hooks.json')}`);
+
+    console.log(`\n✅ Cursor install complete:`);
+    console.log(`   Plugin root: ${pluginRootAbs}`);
     if (installedTag) {
-      console.log(`   - version: ${installedTag}`);
+      console.log(`   Version:     ${installedTag}`);
     }
     console.log(`\nNext: open Cursor Agent and try "/workflow-start".`);
   } finally {

@@ -6,15 +6,19 @@
 
 ## Installation
 
-OpenCode discovers agent skills from project skill directories. This repository exposes the existing `skills/` folder through:
+### Plugin Mode (recommended)
 
-```text
-.agents/skills -> ../skills
+Clone the repository and point OpenCode to the plugin entry:
+
+```bash
+git clone https://github.com/MageByte-Zero/spec-superflow.git ~/spec-superflow
 ```
 
-If you open OpenCode inside this repository, the skills are available through that project-local entry.
+Then in your OpenCode project, reference the plugin in `.opencode/config.json` (or via the UI).
 
-For another project, point that project's `.agents/skills` at this repository's `skills/` directory:
+### Manual Skills Symlink
+
+OpenCode discovers agent skills from project skill directories. For a specific project:
 
 ```bash
 git clone https://github.com/MageByte-Zero/spec-superflow.git
@@ -22,10 +26,9 @@ mkdir -p your-project/.agents
 ln -s /absolute/path/to/spec-superflow/skills your-project/.agents/skills
 ```
 
-If symlinks are not convenient on your platform, copy the folder instead:
+If symlinks are not available, copy instead:
 
 ```bash
-mkdir -p your-project/.agents
 cp -R /absolute/path/to/spec-superflow/skills your-project/.agents/skills
 ```
 
@@ -33,20 +36,20 @@ cp -R /absolute/path/to/spec-superflow/skills your-project/.agents/skills
 
 Ask OpenCode to use the workflow entry skill:
 
-```text
-use workflow-orchestrator to start
+```
+用 workflow-start 开始
 ```
 
-Or explicitly load:
+Or explicitly:
 
-```text
-spec-superflow/workflow-orchestrator
+```
+/spec-superflow:workflow-start
 ```
 
 ## Troubleshooting
 
 ### Skills not found
 
-1. Verify that `your-project/.agents/skills/workflow-orchestrator/SKILL.md` exists.
+1. Verify that `.agents/skills/workflow-start/SKILL.md` exists.
 2. Restart OpenCode after adding or changing the skill directory.
 3. Use a real directory copy instead of a symlink if your environment does not follow symlinks.

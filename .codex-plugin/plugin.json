@@ -1,6 +1,6 @@
 {
   "name": "spec-superflow",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "Spec-first workflow that bridges OpenSpec-style planning and Superpowers-style execution discipline.",
   "author": {
     "name": "MageByte",
@@ -28,6 +28,7 @@
     "longDescription": "A self-contained Codex workflow plugin with nine skills for intent exploration, planning artifacts, execution contracts, TDD execution, review gates, systematic debugging, closure, and delta spec sync.",
     "developerName": "MageByte",
     "category": "Productivity",
+    "composerIcon": "./assets/icon.svg",
     "capabilities": [
       "Write",
       "Review"
