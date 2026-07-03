@@ -10,6 +10,7 @@
   "homepage": "https://github.com/MageByte-Zero/spec-superflow",
   "repository": "https://github.com/MageByte-Zero/spec-superflow",
   "license": "MIT",
+  "logo": "assets/icon.svg",
   "keywords": [
     "workflow",
     "skills",
@@ -22,5 +23,6 @@
     "spec-sync",
     "ai-coding"
   ],
-  "skills": "./skills/"
+  "skills": "./skills/",
+  "hooks": "./hooks/"
 }

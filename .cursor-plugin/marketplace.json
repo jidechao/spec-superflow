@@ -1,0 +1,17 @@
+{
+  "name": "spec-superflow-marketplace",
+  "owner": {
+    "name": "MageByte"
+  },
+  "metadata": {
+    "description": "Spec-first workflow plugin marketplace for Cursor",
+    "version": "0.8.5"
+  },
+  "plugins": [
+    {
+      "name": "spec-superflow",
+      "source": ".",
+      "description": "Spec-first workflow: integrates OpenSpec planning engine + Superpowers execution discipline with 9 collaborative skills."
+    }
+  ]
+}
