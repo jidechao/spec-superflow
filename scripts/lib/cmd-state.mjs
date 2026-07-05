@@ -113,24 +113,29 @@ export async function run(args) {
         timeout: 10_000,
       });
 
-      // If guard fails with exit 2 (usage error), try without --workflow
-      if (guardResult.status !== 0) {
-        const guardOutput = guardResult.stdout.toString();
-        try {
-          const parsed = JSON.parse(guardOutput);
-          if (!parsed.pass) {
-            const failures = (parsed.checks || [])
-              .filter(c => !c.pass)
-              .flatMap(c => c.failures.map(f => `[${c.dimension}] ${f}`));
-            console.error(`Guard check failed for ${fromState} -> ${toState}:`);
-            for (const f of failures) console.error(`  ${f}`);
-            if (parsed.error) console.error(`  ${parsed.error}`);
-            process.exit(1);
-          }
-        } catch {
-          // Guard script error; if guard is missing or broken, allow the transition with warning
-          if (!values.json) console.error(`Warning: guard check skipped (guard script error)`);
+      const guardOutput = guardResult.stdout.toString();
+      let parsed;
+      try {
+        parsed = JSON.parse(guardOutput);
+      } catch {
+        const stderr = guardResult.stderr.toString().trim();
+        console.error(`Guard check failed for ${fromState} -> ${toState}:`);
+        console.error('  [guard-error] Guard did not return valid JSON.');
+        if (stderr) console.error(`  ${stderr}`);
+        process.exit(1);
+      }
+
+      if (guardResult.status !== 0 || !parsed.pass) {
+        const failures = (parsed.checks || [])
+          .filter(c => !c.pass)
+          .flatMap(c => (c.failures || []).map(f => `[${c.dimension}] ${f}`));
+        console.error(`Guard check failed for ${fromState} -> ${toState}:`);
+        for (const f of failures) console.error(`  ${f}`);
+        if (parsed.error) console.error(`  ${parsed.error}`);
+        if (failures.length === 0 && !parsed.error) {
+          console.error('  [guard-error] Guard failed without a structured failure message.');
         }
+        process.exit(1);
       }
 
       state.state = toState;

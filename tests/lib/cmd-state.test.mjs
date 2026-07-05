@@ -166,6 +166,19 @@ describe('cmd-state: transition', () => {
     const check = ssf(`state get ${tempDir} state`);
     assert.equal(check.stdout.trim(), 'exploring');
   });
+
+  it('rejects transition when guard output is not valid JSON', () => {
+    rmSync(join(tempDir, '.spec-superflow.yaml'), { force: true });
+    ssf(`state init ${tempDir}`);
+    ssf(`state set ${tempDir} workflow invalid-mode`);
+
+    const result = ssf(`state transition ${tempDir} specifying`);
+    assert.equal(result.exitCode, 1);
+    assert.match(result.stderr || result.stdout, /valid JSON|Invalid workflow|guard-error/i);
+
+    const check = ssf(`state get ${tempDir} state`);
+    assert.equal(check.stdout.trim(), 'exploring');
+  });
 });
 
 describe('cmd-state: get', () => {
