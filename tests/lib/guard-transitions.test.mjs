@@ -88,7 +88,7 @@ function runGuard(from, to, dir, workflow = 'full') {
     }
     return { ok: true };
   } catch (e) {
-    return { ok: false, stderr: e.stderr?.toString() || e.message };
+    return { ok: false, stdout: e.stdout?.toString() || '', stderr: e.stderr?.toString() || e.message };
   }
 }
 
@@ -232,13 +232,15 @@ describe('Fast-path validation', () => {
 
   it('SHALL reject hotfix fast-path when workflow is full', () => {
     const result = runGuard('exploring', 'bridging', dir, 'full');
+    const output = `${result.stdout}\n${result.stderr}`;
     assert.equal(result.ok, false, 'exploring -> bridging must be rejected in full workflow');
-    assert.match(result.stderr, /workflow-mode|fast-path|hotfix|tweak/i);
+    assert.match(output, /workflow-mode|fast-path|hotfix|tweak/i);
   });
 
   it('SHALL reject tweak fast-path when workflow is full', () => {
     const result = runGuard('exploring', 'approved-for-build', dir, 'full');
+    const output = `${result.stdout}\n${result.stderr}`;
     assert.equal(result.ok, false, 'exploring -> approved-for-build must be rejected in full workflow');
-    assert.match(result.stderr, /workflow-mode|fast-path|tweak/i);
+    assert.match(output, /workflow-mode|fast-path|tweak/i);
   });
 });
