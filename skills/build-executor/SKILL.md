@@ -15,6 +15,15 @@ Check workflow mode first: `ssf state get <change-dir> workflow`. If `tweak` →
 
 Config check: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" execution.inlineThreshold` (default: 3).
 
+Branch/worktree preflight before any implementation edit:
+1. Run `git branch --show-current` and `git status --short`.
+2. If the branch is `main` or `master`, create or switch to isolated implementation context before editing:
+   - Preferred: `git worktree add ../<repo>-<change-name> -b <change-name>`
+     Then `cd ../<repo>-<change-name>` and make all implementation edits in that worktree.
+   - Fallback: `git switch -c <change-name>`
+3. If branch/worktree isolation cannot be created, stop and ask the user for explicit approval before editing `main` or `master`.
+4. Report the chosen branch/worktree before implementation starts.
+
 ## Core Laws
 
 ### Law 1: Contract First

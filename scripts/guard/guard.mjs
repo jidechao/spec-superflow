@@ -28,11 +28,38 @@ const TRANSITION_CHECKS = {
   // Rewind transitions (scope change, contract drift, verification failure)
   'specifying:exploring':           [],
   'bridging:specifying':            [],
+  'approved-for-build:specifying':  [],
   'approved-for-build:bridging':    [],
   'executing:specifying':           [],
   'executing:bridging':             [],
   'closing:specifying':             [],
+
+  // Abandon transitions (terminal)
+  'exploring:abandoned':            [],
+  'specifying:abandoned':           [],
+  'bridging:abandoned':             [],
+  'approved-for-build:abandoned':   [],
+  'executing:abandoned':            [],
+  'debugging:abandoned':            [],
 };
+
+const TRANSITION_WORKFLOW_REQUIREMENTS = {
+  'exploring:bridging': ['hotfix', 'tweak'],
+  'exploring:approved-for-build': ['tweak'],
+};
+
+function checkWorkflowAllowed(key, workflow) {
+  const allowed = TRANSITION_WORKFLOW_REQUIREMENTS[key];
+  if (!allowed || allowed.includes(workflow)) return { pass: true, checks: [] };
+  return {
+    pass: false,
+    checks: [{
+      dimension: 'workflow-mode',
+      pass: false,
+      failures: [`${key.replace(':', ' -> ')} is a fast-path transition allowed only for workflow ${allowed.join(' or ')}; current workflow is ${workflow}`],
+    }],
+  };
+}
 
 function applyWorkflowMode(checks, workflow) {
   if (workflow === 'full') return checks;
@@ -91,6 +118,21 @@ async function main() {
     const msg = `Unknown transition: ${fromState} -> ${toState}. Valid transitions: ${valid}`;
     if (useJson) console.log(JSON.stringify({ pass: false, checks: [], error: msg }));
     else console.error(msg);
+    process.exit(1);
+  }
+
+  const workflowCheck = checkWorkflowAllowed(key, workflow);
+  if (!workflowCheck.pass) {
+    if (useJson) {
+      console.log(JSON.stringify({ pass: false, checks: workflowCheck.checks }, null, 2));
+    } else {
+      console.error('Guard checks failed:');
+      for (const c of workflowCheck.checks) {
+        for (const f of c.failures) {
+          console.error(`  [FAIL] ${c.dimension}: ${f}`);
+        }
+      }
+    }
     process.exit(1);
   }
 

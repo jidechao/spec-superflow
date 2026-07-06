@@ -4,6 +4,14 @@ All notable changes to `spec-superflow` will be documented in this file.
 
 The format loosely follows Keep a Changelog.
 
+## [0.8.10] - 2026-07-06
+
+### Fixed
+
+- **Guard fast-path gating** — `exploring -> bridging` now requires `hotfix` or `tweak`, and `exploring -> approved-for-build` now requires `tweak`; `full`/`auto` workflows no longer skip `contract-builder` and approval gates.
+- **State transition safety** — `ssf state transition` now fails closed when guard execution fails, returns malformed output, reports non-boolean `pass`, or exits unsuccessfully, preventing state writes after unreliable guard checks.
+- **Execution branch isolation** — `build-executor` now requires branch/worktree preflight before implementation and stops for explicit approval before editing `main` or `master`.
+
 ## [0.8.9] - 2026-07-04
 
 ### Added
