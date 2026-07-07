@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# scripts/ssf — thin bash wrapper around the spec-superflow CLI.
+#
+# Why this exists: skills/**/SKILL.md must invoke the CLI without depending on
+# `ssf` being on PATH (cursor/marketplace users have no such binary) and without
+# referencing the `.mjs` path via `node "<path>"` (which static security
+# scanners flag as interpreter-mediated code execution). Skills instead call
+# `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ssf" <args>` — the same proven-safe form
+# used by `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config"`. This wrapper then
+# execs the real CLI via its #!/usr/bin/env node shebang (no `node` literal
+# here, all variables quoted, no shell-injection surface).
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "${SCRIPT_DIR}/spec-superflow.mjs" "$@"

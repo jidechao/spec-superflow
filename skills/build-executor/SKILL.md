@@ -11,20 +11,20 @@ Controls the implementation phase. Uses `execution-contract.md` as the workflow 
 
 Read: `execution-contract.md`, `tasks.md`, relevant `specs/`, relevant `design.md`. (Skip contract/spec requirements when workflow is `tweak`.)
 
-Check workflow mode first: `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state get <change-dir> workflow`. If `tweak` → direct edit mode. If `hotfix` or `full` → standard contract-first discipline.
+Check workflow mode first: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ssf" state get <change-dir> workflow`. If `tweak` → direct edit mode. If `hotfix` or `full` → standard contract-first discipline.
 
 Config check: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/get-config" execution.inlineThreshold` (default: 3).
 
 Branch/worktree preflight before ANY implementation edit (mandatory — do not skip):
 1. Run the isolation check:
    ```bash
-   node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" isolate <change-dir>
+   bash "${CLAUDE_PLUGIN_ROOT}/scripts/ssf" isolate <change-dir>
    ```
    This script enforces git isolation: if you are on `main`/`master` it creates a
    git worktree (preferred) or a new branch, and exits non-zero if it cannot and you
    have not approved `--force`.
-2. If `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" isolate` exits non-zero: STOP. Do not edit `main`/`master` in place.
-   Ask the user for explicit approval (and re-run with `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" isolate <change-dir> --force`
+2. If `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ssf" isolate` exits non-zero: STOP. Do not edit `main`/`master` in place.
+   Ask the user for explicit approval (and re-run with `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ssf" isolate <change-dir> --force`
    only after they approve).
 3. If it succeeds, report the chosen branch/worktree and make all implementation
    edits there.
@@ -80,7 +80,7 @@ For changes with multiple execution batches. Dispatch implementer subagent per t
 Use least powerful model per role: mechanical (cheap), integration/judgment (standard), architecture/design (most capable), review (match diff), final review (most capable). Always specify model explicitly.
 
 ### Progress Ledger
-Track in `.superpowers/sdd/progress.md`. Check for existing ledger — completed tasks are done. After each batch: `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> batches_completed <N>`.
+Track in `.superpowers/sdd/progress.md`. Check for existing ledger — completed tasks are done. After each batch: `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ssf" state set <change-dir> batches_completed <N>`.
 
 ## Inline Execution Mode
 
@@ -96,8 +96,8 @@ Skip TDD. Apply changes directly. Verify file integrity (exists, non-empty, vali
 
 ## DP Records
 
-DP-4 (execution mode): `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_4_result "<mode>: <rationale>"` + timestamp.
-DP-5 (debug escalation): `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_5_result "<resolution>"` + timestamp.
+DP-4 (execution mode): `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ssf" state set <change-dir> dp_4_result "<mode>: <rationale>"` + timestamp.
+DP-5 (debug escalation): `bash "${CLAUDE_PLUGIN_ROOT}/scripts/ssf" state set <change-dir> dp_5_result "<resolution>"` + timestamp.
 
 ## Completion Standard
 
