@@ -4,7 +4,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 const DEFAULTS = {
   artifacts: {
@@ -47,7 +47,7 @@ function findConfigFile(startDir) {
 
   // 2. Check git root
   try {
-    const gitRoot = execSync('git rev-parse --show-toplevel', {
+    const gitRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: startDir,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
