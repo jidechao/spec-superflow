@@ -7,6 +7,7 @@ import { checkTasksComplete } from './checks/tasks-complete.mjs';
 import { checkTestsPassing } from './checks/tests-passing.mjs';
 import { checkContractFresh } from './checks/contract-fresh.mjs';
 import { check as checkDpGate } from './checks/dp-gate-passed.mjs';
+import { checkSpecsMerged } from './checks/specs-merged.mjs';
 
 // Transition matrix: <from>:<to> → required check dimensions
 const TRANSITION_CHECKS = {
@@ -15,7 +16,7 @@ const TRANSITION_CHECKS = {
   'specifying:bridging':            ['artifacts-exist', 'schema-valid'],
   'bridging:approved-for-build':    ['artifacts-exist', 'schema-valid', 'contract-fresh', 'dp-gate-passed'],
   'approved-for-build:executing':   ['artifacts-exist', 'contract-fresh', 'dp-gate-passed'],
-  'executing:closing':              ['tasks-complete', 'tests-passing'],
+  'executing:closing':              ['tasks-complete', 'tests-passing', 'specs-merged'],
 
   // Debugging side-path
   'executing:debugging':            [],
@@ -149,6 +150,7 @@ async function main() {
     'contract-fresh': (dir) => checkContractFresh(dir),
     'tasks-complete': (dir) => checkTasksComplete(dir),
     'tests-passing': (dir) => checkTestsPassing(dir),
+    'specs-merged': (dir) => checkSpecsMerged(dir),
     'dp-gate-passed': (dir) => checkDpGate(dir, fromState, toState),
   };
 

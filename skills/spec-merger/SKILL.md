@@ -10,7 +10,7 @@ After a change completes, delta specs (ADDED/MODIFIED/REMOVED/RENAMED) must be m
 ## Pre-Flight Checks
 
 ### Conflict Detection
-Run `node scripts/spec-superflow.mjs sync <change-dir>`. If conflicts are detected (same requirement modified by multiple changes), present the conflict list to the user for resolution order.
+Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" sync <change-dir>`. If conflicts are detected (same requirement modified by multiple changes), present the conflict list to the user for resolution order.
 
 ### Abandoned Change Guard
 Check if the change is `abandoned`. If so → STOP: "Abandoned changes cannot be synced. Delta specs are preserved for reference but must not be merged."
@@ -53,6 +53,11 @@ Output sync report table: Capability, ADDED/MODIFIED/REMOVED/RENAMED counts, Sta
 
 1. Report results. If no conflicts → ready to archive. If conflicts → user resolves before archive.
 2. Change folder (including deltas) remains for traceability.
+3. Record that merging is complete so the `executing → closing` guard allows closure:
+   ```bash
+   node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> spec_merged true
+   ```
+   (If the change had no delta sections, still set `spec_merged true` — there was nothing to merge.)
 
 ## Exception Handling
 

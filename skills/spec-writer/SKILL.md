@@ -73,8 +73,8 @@ Generate one at a time. Confirm each before next. This prevents scope drift — 
 
 Present summary of all 4 artifacts (2-3 sentences each). Ask user for adjustments. After approval:
 ```bash
-ssf state set <change-dir> dp_2_result "approved: <summary>"
-ssf state set <change-dir> dp_2_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_2_result "approved: <summary>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_2_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
 
 ## Handoff Rule

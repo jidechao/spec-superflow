@@ -12,6 +12,7 @@ const BUILTIN_DEFAULTS = {
   execution_mode: null,
   batches_completed: 0,
   test_result: null,
+  spec_merged: false,
   change_name: null,
   last_transition: null,
   last_transition_from: null,
@@ -72,6 +73,7 @@ export function writeState(changeDir, state) {
   lines.push(`execution_mode: ${state.execution_mode ?? 'null'}`);
   lines.push(`batches_completed: ${state.batches_completed ?? 0}`);
   lines.push(`test_result: ${state.test_result ?? 'null'}`);
+  lines.push(`spec_merged: ${state.spec_merged ?? false}`);
   lines.push('');
   lines.push('# === Metadata ===');
   lines.push(`change_name: ${state.change_name ?? path.basename(changeDir)}`);

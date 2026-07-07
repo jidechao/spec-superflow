@@ -30,17 +30,17 @@ Ask: change name + one-sentence intent, known constraints, related optimizations
 
 After confirmation:
 ```bash
-ssf state set <change-dir> dp_0_decisions "<summary>"
-ssf state set <change-dir> dp_0_result confirmed
-ssf state set <change-dir> dp_0_confirmed true
-ssf state set <change-dir> dp_0_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_0_decisions "<summary>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_0_result confirmed
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_0_confirmed true
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_0_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
 
 Config-aware routing: check `artifacts.order` and `artifacts.skip` from project config.
 
 ## Mode Detection
 
-If workflow is `auto`/`null`/unset: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/infer-workflow.mjs" <change-dir>`. Inference: **hotfix** (≤2 tasks, ≤2 files, no schema/API/new modules), **tweak** (≤4 tasks, config/doc only), **full** (anything larger). Persist with `ssf state set <dir> workflow <mode>`.
+If workflow is `auto`/`null`/unset: run `node "${CLAUDE_PLUGIN_ROOT}/scripts/infer-workflow.mjs" <change-dir>`. Inference: **hotfix** (≤2 tasks, ≤2 files, no schema/API/new modules), **tweak** (≤4 tasks, config/doc only), **full** (anything larger). Persist with `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <dir> workflow <mode>`.
 
 Validate mode against artifact content. If hotfix/tweak criteria not met → upgrade to `full` and output reason. Don't overwrite explicit mode unless user asks.
 
@@ -77,7 +77,7 @@ User explicitly requests, bug-investigator escalates after 3+ failures AND user 
 - **Hotfix**: Route to contract-builder (minimal), skip need-explorer + spec-writer, guard check `exploring bridging --workflow hotfix`, after DP-3 → build-executor (inline), after → release-archivist (lightweight)
 - **Tweak**: Route to build-executor (direct edit), skip need-explorer + spec-writer + contract-builder, guard check `exploring approved-for-build --workflow tweak`, after → release-archivist (lightweight)
 
-Post-transition: 💡 `ssf inject <change-dir>` to update phase-guard artifacts.
+Post-transition: 💡 `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" inject <change-dir>` to update phase-guard artifacts.
 
 ## Staleness Detection
 

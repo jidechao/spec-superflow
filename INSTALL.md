@@ -32,6 +32,7 @@
 | Roo Code | `ssf install-roocode` | 重新运行脚本 | 删除 `.roo/skills/`、`.roo/rules/` |
 | Continue | `ssf install-continue` | 重新运行脚本 | 删除 `.continue/skills/`、`.continue/rules/` |
 | Pi | `ssf install-pi` | 重新运行脚本 | 删除 `.pi/skills/` |
+| ZCODE | `ssf install-zcode` | 重新运行脚本 | 删除 `.zcode/skills/`、`.zcode/rules/` |
 
 ---
 

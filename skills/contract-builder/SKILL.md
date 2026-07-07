@@ -35,8 +35,8 @@ Must make obvious: approved behavior, out-of-scope, constraints, batches, test o
 
 After drafting: summarize handoff rules, identify ambiguity, flag unmapped requirements, ask user to approve explicitly. After approval:
 ```bash
-ssf state set <change-dir> dp_3_result "approved: <summary>"
-ssf state set <change-dir> dp_3_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_3_result "approved: <summary>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_3_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
 DP-3 is a hard gate — no implementation without this record.
 
@@ -57,7 +57,7 @@ Generate minimal contract: Intent Lock (one sentence), Task List (numbered), App
 
 ## Post-Generation
 
-Run `node scripts/spec-superflow.mjs state init <change-dir>` to create `.spec-superflow.yaml` with hashes.
+Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state init <change-dir>` to create `.spec-superflow.yaml` with hashes.
 
 ## Exception Handling
 

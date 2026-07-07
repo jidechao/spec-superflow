@@ -15,7 +15,7 @@ const VALID_STATES = [
 ];
 
 const SETTABLE_FIELDS = [
-  'workflow', 'execution_mode', 'test_result', 'batches_completed',
+  'workflow', 'execution_mode', 'test_result', 'batches_completed', 'spec_merged',
   'dp_0_decisions', 'dp_0_confirmed', 'dp_0_timestamp', 'dp_0_result',
   'dp_1_result', 'dp_1_timestamp', 'dp_1_decisions', 'dp_1_confirmed',
   'dp_2_result', 'dp_2_timestamp', 'dp_2_decisions', 'dp_2_confirmed',
@@ -43,6 +43,26 @@ export async function run(args) {
     console.error('Usage: ssf state <subcommand> <change-dir> [arg]');
     console.error('Subcommands: init, check, transition, get, rebuild, set');
     process.exit(2);
+  }
+
+  // Unknown subcommand: report a usage error (exit 2) BEFORE the BUG-B
+  // state-file existence check, so a bad subcommand is not masked by the
+  // "No state file" error (which would return exit 1 instead of exit 2).
+  const KNOWN_SUBS = ['init', 'check', 'transition', 'get', 'rebuild', 'set'];
+  if (!KNOWN_SUBS.includes(sub)) {
+    console.error(`Unknown subcommand: ${sub}. Valid: ${KNOWN_SUBS.join(', ')}`);
+    process.exit(2);
+  }
+
+  // BUG-B: every subcommand except `init` requires an existing state file.
+  // Without this check, readState silently returns defaults and `set` would
+  // create a phantom .spec-superflow.yaml in the wrong directory (state drift).
+  if (sub !== 'init') {
+    const STATE_FILE = '.spec-superflow.yaml';
+    if (!existsSync(join(changeDir, STATE_FILE))) {
+      console.error(`No state file at ${join(changeDir, STATE_FILE)}. Run 'ssf state init <change-dir>' first.`);
+      process.exit(1);
+    }
   }
 
   switch (sub) {

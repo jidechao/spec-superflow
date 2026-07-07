@@ -14,6 +14,7 @@ const COMMANDS = {
   state:          () => import('./lib/cmd-state.mjs'),
   inject:         () => import('./lib/cmd-inject.mjs'),
   audit:          () => import('./lib/cmd-audit.mjs'),
+  isolate:        () => import('./lib/cmd-isolate.mjs'),
   'install-cursor': () => import('./lib/cmd-install-cursor.mjs'),
   'install-workbuddy': () => import('./lib/cmd-install-workbuddy.mjs'),
   'install-cline':    () => import('./lib/cmd-install-cline.mjs'),
@@ -24,6 +25,7 @@ const COMMANDS = {
   'install-roocode':  () => import('./lib/cmd-install-roocode.mjs'),
   'install-continue': () => import('./lib/cmd-install-continue.mjs'),
   'install-pi':       () => import('./lib/cmd-install-pi.mjs'),
+  'install-zcode':     () => import('./lib/cmd-install-zcode.mjs'),
 };
 
 const HELP = `spec-superflow (ssf) — Spec-first workflow CLI

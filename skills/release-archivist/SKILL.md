@@ -60,19 +60,26 @@ Check for files modified outside scope fence, new dependencies not in design. Un
 - Scope added without artifact updates?
 - Unresolved blockers or known risks?
 - Delta specs exist that need merging?
-- Run `ssf audit <change-dir>` — include `decision-point-audit.md` in archive
+- Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" audit <change-dir>` — include `decision-point-audit.md` in archive
 
 ### DP-6 (Verification Outcome)
 ```bash
-ssf state set <change-dir> dp_6_result "<pass|conditional|fail>: <summary>"
-ssf state set <change-dir> dp_6_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_6_result "<pass|conditional|fail>: <summary>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_6_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
 If FAIL, do NOT proceed to DP-7. Route back or ask about abandonment.
 
+After recording a PASS outcome, also record it as the verification gate so the
+`executing → closing` transition is allowed (the guard accepts either
+`test_result: pass` or a `dp_6_result` starting with `pass`):
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> test_result pass
+```
+
 ### DP-7 (Archive Confirmation)
 ```bash
-ssf state set <change-dir> dp_7_result "confirmed: <archive summary>"
-ssf state set <change-dir> dp_7_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_7_result "confirmed: <archive summary>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state set <change-dir> dp_7_timestamp $(date -u +%Y-%m-%dT%H:%M:%SZ)
 ```
 Verify DP-0 through DP-6 are recorded before DP-7.
 
@@ -82,7 +89,7 @@ If implementation diverged from the contract, return to `bridging` before closur
 
 ## Post-Verification
 
-Run `node scripts/spec-superflow.mjs state transition <change-dir> closing`. If delta specs exist, route to `spec-merger`.
+Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" state transition <change-dir> closing`. If delta specs exist, route to `spec-merger`.
 
 ## Lightweight Closure (hotfix/tweak)
 
@@ -91,6 +98,6 @@ Verify files exist and are non-empty, run `node --check` on code files, skip 5-s
 ## Exception Handling
 
 - **Parse failures**: Report exact file and section
-- **Missing files**: If audit can't generate, run `ssf audit` manually
+- **Missing files**: If audit can't generate, run `node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" audit` manually
 - **User interruption**: Re-run verification from the beginning on resume
 - **DP gaps**: Flag missing DPs during DP-6; ask user whether to proceed or return
