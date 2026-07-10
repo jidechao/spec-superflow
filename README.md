@@ -127,6 +127,13 @@ npx spec-superflow list          # 或通过 npx 使用
 | `ssf state <sub> <dir>` | 管理 `.spec-superflow.yaml` 状态文件 |
 | `ssf inject <dir>` | 生成 phase-guard 产物；仅在检测到单一平台标记时可省略 `--platforms` |
 | `ssf audit <dir>` | 生成决策点审计报告 |
+| `ssf checkpoint save <dir> --task <id> --next <text>` | 保存任务级会话恢复点 |
+| `ssf checkpoint list <dir>` | 列出 checkpoint 及 stale 状态 |
+| `ssf checkpoint show <dir> <id>` | 查看单个恢复点 |
+| `ssf handoff create <dir> --type <type> ...` | 创建 prototype/research/experiment handoff |
+| `ssf handoff list <dir>` | 列出 handoff 生命周期状态 |
+| `ssf handoff finish <dir> <id>` | 校验 handoff 结果 |
+| `ssf handoff resolve <dir> <id> --decision <decision>` | 记录显式 handoff 决策 |
 | `ssf install-cursor` | 部署到 Cursor `.cursor/` 目录 |
 | `ssf install-workbuddy` | 部署到 WorkBuddy marketplace 插件（含 skills/rules/runtime） |
 | `ssf install-cline` | 部署到 Cline `.cline/` + `.clinerules/` |
@@ -153,6 +160,16 @@ ssf inject changes/my-change --platforms all
 ```
 
 省略 `--platforms` 时，只有在项目中**恰好检测到一个**平台标记时才会自动写入；如果检测到多个平台，必须显式指定 `--platforms <platform>` 或 `--platforms all`。
+
+会话恢复与可选 prototype：
+
+```bash
+ssf checkpoint save changes/my-change --task 1.1 --next "Run focused tests"
+ssf checkpoint list changes/my-change
+ssf handoff create changes/my-change --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
+```
+
+Prototype 只在用户明确确认后创建；后端、CLI、配置和内部重构不会自动进入 prototype 流程。handoff 结果不会自动修改 `design.md` 或 `tasks.md`。
 
 Delta spec 的规范路径是 `specs/<capability>/spec.md`；扁平的 `specs/<capability>.md` 和根级 `specs/spec.md` 不会被视为合法规范。
 

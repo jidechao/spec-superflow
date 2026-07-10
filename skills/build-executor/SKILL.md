@@ -86,7 +86,21 @@ Track in `.superpowers/sdd/progress.md`. Check for existing ledger — completed
 
 For ≤3 tasks, no cross-module deps. Executes in current session.
 
-Per-task: extract brief → write failing test → confirm failure → implement → confirm green → checkpoint review (done-when criteria, SHALL/MUST verification) → commit → append to progress ledger.
+Per-task: extract brief → write failing test → confirm failure → implement → confirm green → checkpoint review (done-when criteria, SHALL/MUST verification) → commit → save a task-level recovery checkpoint when another task remains → append to progress ledger.
+
+After a task is committed and reviewed, when another task remains, save the
+recovery context with real evidence:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" checkpoint save <change-dir> \
+  --task <completed-task-id> --next "<next task>" --completed "<completed work>" \
+  --verification "<verification report path>" --review "<review report path>" \
+  --risk "<open risk or None>" --commit-start <base-sha> --commit-end <head-sha>
+```
+
+This augments `.superpowers/sdd/progress.md`; it does not replace the progress
+ledger or add a new core workflow state. Do not claim a checkpoint is current
+when `ssf checkpoint list` reports it as stale.
 
 If task hits BLOCKED (3+ fix failures or changes outside declared scope), escalate to SDD.
 

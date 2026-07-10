@@ -114,6 +114,13 @@ npm install -g spec-superflow
 | `ssf state <sub> <dir>` | Manage `.spec-superflow.yaml` state file |
 | `ssf inject <dir>` | Generate phase-guard artifacts; omit `--platforms` only when exactly one platform marker is detected |
 | `ssf audit <dir>` | Generate decision-point audit report |
+| `ssf checkpoint save <dir> --task <id> --next <text>` | Save a task-level recovery checkpoint |
+| `ssf checkpoint list <dir>` | List checkpoints and stale status |
+| `ssf checkpoint show <dir> <id>` | Show one recovery checkpoint |
+| `ssf handoff create <dir> --type <type> ...` | Create a prototype/research/experiment handoff |
+| `ssf handoff list <dir>` | List handoff lifecycle status |
+| `ssf handoff finish <dir> <id>` | Validate a handoff result |
+| `ssf handoff resolve <dir> <id> --decision <decision>` | Record an explicit handoff decision |
 | `ssf install-cursor` | Deploy to `.cursor/` directory |
 | `ssf install-workbuddy` | Deploy to WorkBuddy marketplace and enable skills |
 
@@ -132,6 +139,18 @@ ssf inject changes/my-change --platforms all
 ```
 
 If `--platforms` is omitted, injection only proceeds when exactly one project marker is detected. Ambiguous projects must use `--platforms <platform>` or `--platforms all`.
+
+Session recovery and optional prototypes:
+
+```bash
+ssf checkpoint save changes/my-change --task 1.1 --next "Run focused tests"
+ssf checkpoint list changes/my-change
+ssf handoff create changes/my-change --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
+```
+
+Prototype work starts only after explicit user confirmation. Backend, CLI,
+configuration, and internal-refactor work does not enter the prototype route
+automatically. Handoff results never edit `design.md` or `tasks.md` automatically.
 
 Canonical delta specs live at `specs/<capability>/spec.md`; flat `specs/<capability>.md` and root-level `specs/spec.md` are not valid canonical paths.
 

@@ -680,6 +680,20 @@ ssf inject changes/my-change --platforms all
 
 省略 `--platforms` 时，只有在项目里**恰好检测到一个**平台标记时才会自动注入；如果检测到多个平台，必须显式传 `--platforms <platform>` 或 `--platforms all`。
 
+### 会话恢复与可选 prototype
+
+```bash
+ssf checkpoint save changes/my-change --task 1.1 --next "Run focused tests"
+ssf checkpoint list changes/my-change
+ssf checkpoint show changes/my-change 1.1
+ssf handoff create changes/my-change --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
+ssf handoff list changes/my-change
+ssf handoff finish changes/my-change <handoff-id>
+ssf handoff resolve changes/my-change <handoff-id> --decision accept
+```
+
+Checkpoint 是任务级恢复上下文。`result-ready` handoff 在继续受影响的工作前必须显式审阅并 resolve。Prototype 只在用户明确确认后创建；后端、CLI、配置和内部重构不会自动进入 prototype 流程。handoff 结果不会自动修改 `design.md` 或 `tasks.md`。
+
 ## 验证
 
 安装后验证：

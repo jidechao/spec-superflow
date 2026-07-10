@@ -66,6 +66,22 @@
 - `closing` — successful completion with verification
 - `abandoned` — change abandoned (no delta spec merge, no further transitions allowed)
 
+## Recovery Overlays
+
+Checkpoints, handoffs, and prototypes are durable overlays, not workflow states.
+They do not add transitions to the state machine or change the meaning of the
+eight core states.
+
+- `ssf checkpoint save <change-dir> --task <id> --next <text>` records task-level
+  recovery context under `.superpowers/sdd/checkpoints/`.
+- `ssf handoff create <change-dir> --type <type> ...` creates explicit side-work
+  contracts under `.superpowers/sdd/handoffs/`.
+- `workflow-start` lists overlays before normal routing. `result-ready` handoffs
+  require explicit review and resolution before affected work resumes; stale
+  checkpoints remain historical evidence only.
+- Prototype work is optional and requires explicit user confirmation. Results
+  are reviewed manually and never mutate `design.md` or `tasks.md`.
+
 ## Transitions
 
 ```text

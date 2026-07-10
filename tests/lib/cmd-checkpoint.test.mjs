@@ -35,6 +35,13 @@ afterEach(() => {
 });
 
 describe('ssf checkpoint', () => {
+  it('advertises checkpoint and handoff syntax in --help', () => {
+    const result = runSsf(['--help']);
+    assert.equal(result.exitCode, 0, result.stderr);
+    assert.match(result.stdout, /checkpoint save <change-dir>/);
+    assert.match(result.stdout, /handoff create <change-dir>/);
+  });
+
   it('saves and shows a task checkpoint', () => {
     const result = runSsf([
       'checkpoint', 'save', changeDir, '--task', '1.1', '--next', 'Run focused tests',

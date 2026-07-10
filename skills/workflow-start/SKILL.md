@@ -21,6 +21,7 @@ Do NOT invoke for: general coding tasks outside spec-superflow changes, casual q
 
 1. **Update check**: Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/check-update.mjs"`. Exit 0 → continue. Exit 1 → non-blocking upgrade reminder. Exit 2 → skip.
 2. **Inspect change folder**: Check for `proposal.md`, `specs/`, `design.md`, `tasks.md`, `execution-contract.md`. Answer: Is the change fuzzy? Artifacts missing/unstable? Contract exist? User approved contract? Execution in progress or blocked? In verification/wrap-up?
+3. **Overlay recovery scan**: Run `ssf handoff list <change-dir> --json` and `ssf checkpoint list <change-dir> --json`. A `result-ready` handoff requires explicit review and `ssf handoff resolve` before resuming the affected work. An `active` handoff is non-blocking side work. Show a non-stale checkpoint as recovery context; show a stale checkpoint only as historical evidence.
 
 ## DP-0: User Confirmation Gate
 
@@ -72,6 +73,24 @@ Delta specs exist that need merging, change closing with ADDED/MODIFIED/REMOVED/
 
 ### Route to abandoned
 User explicitly requests, bug-investigator escalates after 3+ failures AND user chooses, scope change makes change no longer worthwhile AND user confirms. Block from `closing` or `abandoned`.
+
+### Optional Prototype Handoff
+
+When the user's brief explicitly contains UI, screen, interaction, layout, UX,
+or product-experience uncertainty, ask once whether a prototype would reduce
+uncertainty. Do not create a prototype handoff or enter a prototype worktree
+until the user confirms. After confirmation:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" handoff create <change-dir> \
+  --type prototype --objective "<confirmed objective>" \
+  --expected-output "<expected evidence>" --acceptance "<completion criterion>"
+node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" isolate <change-dir> prototype-<handoff-id>
+```
+
+Never suggest or enter this route automatically for backend, CLI, configuration,
+or internal-refactor work. Never pass `--force` to `ssf isolate` for prototype
+work.
 
 ### Fast-Path Routing
 - **Hotfix**: Route to contract-builder (minimal), skip need-explorer + spec-writer, guard check `exploring bridging --workflow hotfix`, then `bridging -> approved-for-build`, after DP-3 → build-executor (inline), after → release-archivist (lightweight). Hotfix may skip `proposal.md`, `design.md`, `tasks.md`, and `specs/`, but it still requires a fresh minimal `execution-contract.md` and DP-3 approval before build

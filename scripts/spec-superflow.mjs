@@ -44,6 +44,20 @@ Commands:
   state <sub> <dir>     Manage .spec-superflow.yaml state (init|check|transition|get|rebuild)
   inject <dir>          Generate phase-guard artifacts; use --platforms <name|all> when platform is ambiguous
   audit <dir>           Generate decision-point-audit.md from .spec-superflow.yaml
+  checkpoint save <change-dir> --task <id> --next <text>
+                        Save a task-level recovery checkpoint
+  checkpoint list <change-dir>
+                        List checkpoints and stale status
+  checkpoint show <change-dir> <id>
+                        Show one recovery checkpoint
+  handoff create <change-dir> --type <type> --objective <text> --expected-output <text> --acceptance <text>
+                        Create an explicit prototype/research/experiment handoff
+  handoff list <change-dir>
+                        List active and completed handoffs
+  handoff finish <change-dir> <id>
+                        Validate a handoff result
+  handoff resolve <change-dir> <id> --decision <accept|reject|defer>
+                        Record the explicit handoff decision
   install-cursor        Deploy skills/scripts/docs to .cursor/ (local Cursor setup)
   install-workbuddy     Deploy skills to WorkBuddy marketplace and enable them
   install-cline         Deploy to .cline/ + .clinerules/ (Cline)
@@ -71,6 +85,9 @@ Examples:
   ssf state check changes/my-change/
   ssf state transition changes/my-change/ approved-for-build
   ssf state get changes/my-change/ batches_completed
+  ssf checkpoint save changes/my-change/ --task 1.1 --next "Run focused tests"
+  ssf checkpoint list changes/my-change/
+  ssf handoff create changes/my-change/ --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
   ssf install-cursor
   ssf install-workbuddy
   ssf install-cline --local /path/to/spec-superflow
