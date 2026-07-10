@@ -246,6 +246,13 @@ describe('Fast-path validation', () => {
     assert.match(output, /workflow-mode|fast-path|hotfix|tweak/i);
   });
 
+  it('SHALL reject tweak route to bridging', () => {
+    const result = runGuard('exploring', 'bridging', dir, 'tweak');
+    const output = guardOutput(result);
+    assert.equal(result.ok, false, 'tweak should use exploring -> approved-for-build, not bridging');
+    assert.match(output, /workflow-mode|hotfix/i);
+  });
+
   it('SHALL reject tweak fast-path when workflow is full', () => {
     const result = runGuard('exploring', 'approved-for-build', dir, 'full');
     const output = guardOutput(result);

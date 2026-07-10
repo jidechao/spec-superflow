@@ -1,5 +1,5 @@
 // tests/lib/guard.test.mjs
-// Tests for scripts/guard/guard.mjs — transition matrix and workflow mode skipping
+// Tests for scripts/guard/guard.mjs — transition matrix and workflow behavior
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
@@ -95,9 +95,7 @@ describe('guard: transition matrix', () => {
   it('exploring→approved-for-build passes in tweak workflow', () => {
     const result = runGuard('exploring', 'approved-for-build', '--workflow tweak');
     assert.equal(result.exitCode, 0, `Expected exit 0 but got ${result.exitCode}: ${JSON.stringify(result.output)}`);
-    const artifactsCheck = result.output.checks.find(c => c.dimension === 'artifacts-exist');
-    assert.ok(artifactsCheck);
-    assert.equal(artifactsCheck.pass, true);
+    assert.deepEqual(result.output.checks, []);
   });
 
   it('unknown transition returns error', () => {
@@ -106,7 +104,7 @@ describe('guard: transition matrix', () => {
   });
 });
 
-describe('guard: workflow mode skipping', () => {
+describe('guard: workflow mode behavior', () => {
   before(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'ssf-guard-mode-'));
     writeFileSync(join(tempDir, 'proposal.md'), '## Why\nTest for mode skipping\n## What Changes\n- Add Y');
@@ -132,41 +130,84 @@ describe('guard: workflow mode skipping', () => {
     }
   }
 
-  it('tweak mode skips schema-valid, contract-fresh, and artifacts-exist', () => {
-    // specifying→bridging normally requires artifacts-exist + schema-valid
-    const result = runGuardWithMode('specifying', 'bridging', 'tweak');
-    const checks = result.output.checks;
-    for (const c of checks) {
-      if (['schema-valid', 'contract-fresh', 'artifacts-exist'].includes(c.dimension)) {
-        assert.equal(c.pass, true, `${c.dimension} should be skipped in tweak mode`);
-        assert.equal(c.skipped, true, `${c.dimension} should be marked skipped in tweak mode`);
-      }
-    }
+  it('tweak mode allows exploring to approved-for-build without artifacts', () => {
+    const result = runGuardWithMode('exploring', 'approved-for-build', 'tweak');
+    assert.equal(result.exitCode, 0, JSON.stringify(result.output));
+    assert.deepEqual(result.output.checks, []);
   });
 
-  it('hotfix mode skips schema-valid only', () => {
-    const result = runGuardWithMode('specifying', 'bridging', 'hotfix');
-    const checks = result.output.checks;
-    const schemaCheck = checks.find(c => c.dimension === 'schema-valid');
-    assert.equal(schemaCheck.pass, true);
-    assert.equal(schemaCheck.skipped, true);
-    // artifacts-exist should NOT be skipped in hotfix
-    const artifactsCheck = checks.find(c => c.dimension === 'artifacts-exist');
-    assert.ok(artifactsCheck, 'artifacts-exist should still run in hotfix mode');
-    assert.notEqual(artifactsCheck.skipped, true);
+  it('hotfix mode allows exploring to bridging without artifacts', () => {
+    const result = runGuardWithMode('exploring', 'bridging', 'hotfix');
+    assert.equal(result.exitCode, 0, JSON.stringify(result.output));
+    assert.deepEqual(result.output.checks, []);
   });
 
-  it('full mode does not skip any checks', () => {
+  it('full mode keeps requiring artifacts on specifying to bridging', () => {
     const result = runGuardWithMode('specifying', 'bridging', 'full');
     const checks = result.output.checks;
-    for (const c of checks) {
-      assert.notEqual(c.skipped, true, `${c.dimension} should not be skipped in full mode`);
-    }
+    assert.ok(checks.some(c => c.dimension === 'artifacts-exist'));
+    assert.ok(checks.some(c => c.dimension === 'schema-valid'));
   });
 
   it('invalid workflow mode exits with error', () => {
     const result = runGuardWithMode('exploring', 'specifying', 'invalid-mode');
     assert.equal(result.exitCode, 2);
+  });
+});
+
+describe('guard: hotfix minimal contract', () => {
+  let dir;
+
+  before(() => {
+    dir = mkdtempSync(join(tmpdir(), 'ssf-hotfix-guard-'));
+    writeFileSync(join(dir, '.spec-superflow.yaml'), 'state: exploring\nworkflow: hotfix\nchange_name: hotfix-test\n');
+  });
+
+  after(() => {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
+
+  function run(fromState, toState) {
+    try {
+      const stdout = execSync(
+        `node ${GUARD_PATH} check ${dir} ${fromState} ${toState} --json --workflow hotfix`,
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      );
+      return { exitCode: 0, output: JSON.parse(stdout.trim()) };
+    } catch (err) {
+      if (err.stdout) {
+        try { return { exitCode: err.status, output: JSON.parse(err.stdout.trim()) }; }
+        catch { return { exitCode: err.status, output: err.stderr || err.message }; }
+      }
+      return { exitCode: err.status || 1, output: err.stderr || err.message };
+    }
+  }
+
+  it('allows exploring to bridging without full planning artifacts', () => {
+    const result = run('exploring', 'bridging');
+    assert.equal(result.exitCode, 0, JSON.stringify(result.output));
+    assert.deepEqual(result.output.checks, []);
+  });
+
+  it('blocks bridging to approved-for-build without execution-contract.md', () => {
+    const result = run('bridging', 'approved-for-build');
+    assert.equal(result.exitCode, 1);
+    assert.ok(result.output.checks.some(c => c.dimension === 'contract-current'));
+  });
+
+  it('blocks bridging to approved-for-build without DP-3', () => {
+    writeFileSync(join(dir, 'execution-contract.md'), '# Execution Contract\n\n## Intent Lock\n\nHotfix contract.\n');
+    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state init ${dir}`);
+    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state set ${dir} workflow hotfix`);
+    const result = run('bridging', 'approved-for-build');
+    assert.equal(result.exitCode, 1);
+    assert.ok(result.output.checks.some(c => c.dimension === 'dp3-approved'));
+  });
+
+  it('allows bridging to approved-for-build with fresh contract and DP-3', () => {
+    execSync(`node ${join(process.cwd(), 'scripts/spec-superflow.mjs')} state set ${dir} dp_3_result approved`);
+    const result = run('bridging', 'approved-for-build');
+    assert.equal(result.exitCode, 0, JSON.stringify(result.output));
   });
 });
 

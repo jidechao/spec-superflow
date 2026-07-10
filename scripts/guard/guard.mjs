@@ -8,6 +8,8 @@ import { checkTestsPassing } from './checks/tests-passing.mjs';
 import { checkContractFresh } from './checks/contract-fresh.mjs';
 import { check as checkDpGate } from './checks/dp-gate-passed.mjs';
 import { checkSpecsMerged } from './checks/specs-merged.mjs';
+import { checkContractCurrent } from './checks/contract-current.mjs';
+import { checkDp3Approved } from './checks/dp3-approved.mjs';
 
 // Transition matrix: <from>:<to> → required check dimensions
 const TRANSITION_CHECKS = {
@@ -22,9 +24,9 @@ const TRANSITION_CHECKS = {
   'executing:debugging':            [],
   'debugging:executing':            ['contract-fresh'],
 
-  // Fast-path transitions (hotfix / tweak)
-  'exploring:bridging':             ['artifacts-exist'],
-  'exploring:approved-for-build':   ['artifacts-exist'],
+  // Fast-path transitions are workflow-gated; full workflow must reject them explicitly.
+  'exploring:bridging':             [],
+  'exploring:approved-for-build':   [],
 
   // Rewind transitions (scope change, contract drift, verification failure)
   'specifying:exploring':           [],
@@ -44,8 +46,19 @@ const TRANSITION_CHECKS = {
   'debugging:abandoned':            [],
 };
 
+const WORKFLOW_TRANSITION_CHECKS = {
+  hotfix: {
+    'exploring:bridging': [],
+    'bridging:approved-for-build': ['contract-current', 'dp3-approved'],
+    'approved-for-build:executing': ['contract-current', 'dp3-approved'],
+  },
+  tweak: {
+    'exploring:approved-for-build': [],
+  },
+};
+
 const TRANSITION_WORKFLOW_REQUIREMENTS = {
-  'exploring:bridging': ['hotfix', 'tweak'],
+  'exploring:bridging': ['hotfix'],
   'exploring:approved-for-build': ['tweak'],
 };
 
@@ -62,21 +75,8 @@ function checkWorkflowAllowed(key, workflow) {
   };
 }
 
-function applyWorkflowMode(checks, workflow) {
-  if (workflow === 'full') return checks;
-
-  const SKIP_DIMENSIONS = {
-    hotfix: ['schema-valid'],
-    tweak: ['schema-valid', 'contract-fresh', 'artifacts-exist'],
-  };
-
-  const skip = SKIP_DIMENSIONS[workflow] || [];
-  return checks.map(check => {
-    if (skip.includes(check.dimension)) {
-      return { ...check, pass: true, skipped: true, failures: [] };
-    }
-    return check;
-  });
+function resolveDimensions(key, workflow) {
+  return WORKFLOW_TRANSITION_CHECKS[workflow]?.[key] ?? TRANSITION_CHECKS[key];
 }
 
 async function main() {
@@ -112,7 +112,7 @@ async function main() {
   }
 
   const key = `${fromState}:${toState}`;
-  const dimensions = TRANSITION_CHECKS[key];
+  const dimensions = resolveDimensions(key, workflow);
 
   if (!dimensions) {
     const valid = Object.keys(TRANSITION_CHECKS).join(', ');
@@ -148,10 +148,12 @@ async function main() {
     'artifacts-exist': (dir) => checkArtifactsExist(dir),
     'schema-valid': async (dir) => (await import('./checks/schema-valid.mjs')).checkSchemaValid(dir),
     'contract-fresh': (dir) => checkContractFresh(dir),
+    'contract-current': (dir) => checkContractCurrent(dir),
     'tasks-complete': (dir) => checkTasksComplete(dir),
     'tests-passing': (dir) => checkTestsPassing(dir),
     'specs-merged': (dir) => checkSpecsMerged(dir),
     'dp-gate-passed': (dir) => checkDpGate(dir, fromState, toState),
+    'dp3-approved': (dir) => checkDp3Approved(dir),
   };
 
   const checks = [];
@@ -166,17 +168,16 @@ async function main() {
     if (!result.pass) pass = false;
   }
 
-  const finalChecks = applyWorkflowMode(checks, workflow);
-  pass = finalChecks.every(c => c.pass);
+  pass = checks.every(c => c.pass);
 
   if (useJson) {
-    console.log(JSON.stringify({ pass, checks: finalChecks }, null, 2));
+    console.log(JSON.stringify({ pass, checks }, null, 2));
   } else {
     if (pass) {
       console.log('All checks passed.');
     } else {
       console.error('Guard checks failed:');
-      for (const c of finalChecks) {
+      for (const c of checks) {
         if (!c.pass) {
           for (const f of c.failures) {
             console.error(`  [FAIL] ${c.dimension}: ${f}`);

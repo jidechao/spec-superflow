@@ -101,8 +101,8 @@ describe('cmd-state: transition', () => {
     writeFileSync(join(tempDir, 'proposal.md'), '## Why\nTest proposal for state transition validation, meeting the minimum length requirement.\n## What Changes\n- Add feature');
     writeFileSync(join(tempDir, 'design.md'), '# Design\n## Context\nTest.\n## Goals\nTest.\n## Decisions\n### D1\n- Choice: Test\n- Rationale: Test\n\n## Risks And Trade-Offs\nNone.');
     writeFileSync(join(tempDir, 'tasks.md'), '# Tasks\n- [x] Task 1');
-    mkdirSync(join(tempDir, 'specs'));
-    writeFileSync(join(tempDir, 'specs', 'test.md'), '## ADDED Requirements\n### Requirement: Test\nSHALL work.\n#### Scenario: Test\n- **WHEN** test\n- **THEN** test');
+    mkdirSync(join(tempDir, 'specs', 'test'), { recursive: true });
+    writeFileSync(join(tempDir, 'specs', 'test', 'spec.md'), '## ADDED Requirements\n### Requirement: Test\nSHALL work.\n#### Scenario: Test\n- **WHEN** test\n- **THEN** test');
   });
 
   after(() => {
@@ -165,7 +165,6 @@ describe('cmd-state: transition', () => {
     assert.match(output, /workflow-mode/i);
     assert.match(output, /fast-path/i);
     assert.match(output, /hotfix/i);
-    assert.match(output, /tweak/i);
 
     const check = ssf(`state get ${tempDir} state`);
     assert.equal(check.stdout.trim(), 'exploring');
