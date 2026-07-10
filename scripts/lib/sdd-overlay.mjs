@@ -169,7 +169,15 @@ function renderResultTemplate() {
 
 function readCheckpoint(filePath) {
   const { metadata } = parseRecord(readFileSync(filePath, 'utf8'));
-  const currentHash = computeTaskHash(dirname(dirname(dirname(dirname(filePath)))), metadata.task_id);
+  let currentHash;
+  try {
+    currentHash = computeTaskHash(dirname(dirname(dirname(dirname(filePath)))), metadata.task_id);
+  } catch (error) {
+    if (error instanceof Error && error.message === `Task '${metadata.task_id}' was not found in tasks.md`) {
+      return { ...metadata, stale: true };
+    }
+    throw error;
+  }
   return { ...metadata, stale: metadata.task_hash !== currentHash };
 }
 
