@@ -58,7 +58,7 @@ describe('config-loader: resolveModelProfile()', () => {
     ]);
   });
 
-  it('resolves every configured profile without changing the model identifier', () => {
+  it('resolves all four configured profiles without changing their model identifiers', () => {
     const config = {
       models: {
         mechanical: 'vendor-small', standard: 'vendor-standard',
@@ -67,6 +67,12 @@ describe('config-loader: resolveModelProfile()', () => {
     };
     assert.deepStrictEqual(configLoader.resolveModelProfile(config, 'mechanical'), {
       profile: 'mechanical', model: 'vendor-small', configured: true,
+    });
+    assert.deepStrictEqual(configLoader.resolveModelProfile(config, 'standard'), {
+      profile: 'standard', model: 'vendor-standard', configured: true,
+    });
+    assert.deepStrictEqual(configLoader.resolveModelProfile(config, 'strong'), {
+      profile: 'strong', model: 'vendor-strong', configured: true,
     });
     assert.deepStrictEqual(configLoader.resolveModelProfile(config, 'review'), {
       profile: 'review', model: 'vendor-review', configured: true,
