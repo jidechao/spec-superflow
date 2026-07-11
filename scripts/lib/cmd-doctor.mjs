@@ -125,12 +125,12 @@ function checkRootPluginAuthor(root) {
   return { pass: false, message: 'author object must contain a name property' };
 }
 
-function checkNodeVersion() {
-  const major = parseInt(process.version.slice(1).split('.')[0], 10);
-  if (major >= 22) {
-    return { pass: true, message: `${process.version}` };
+function checkNodeVersion(version = process.version) {
+  const major = parseInt(version.slice(1).split('.')[0], 10);
+  if (major >= 20) {
+    return { pass: true, message: version };
   }
-  return { pass: false, message: `${process.version} (requires >= 22)` };
+  return { pass: false, message: `${version} (requires >= 20)` };
 }
 
 function checkDocs(root) {

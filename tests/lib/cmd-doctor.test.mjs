@@ -307,15 +307,21 @@ describe('cmd-doctor: checkNodeVersion()', () => {
     checkNodeVersion = mod.checkNodeVersion;
   });
 
-  it('reports current Node.js version', () => {
+  it('accepts Node 20 as the minimum supported runtime', () => {
+    const result = checkNodeVersion('v20.0.0');
+    assert.equal(result.pass, true);
+    assert.equal(result.message, 'v20.0.0');
+  });
+
+  it('rejects Node 19 with the Node 20 repair guidance', () => {
+    const result = checkNodeVersion('v19.9.0');
+    assert.equal(result.pass, false);
+    assert.match(result.message, /v19\.9\.0 \(requires >= 20\)/);
+  });
+
+  it('checks the current Node.js version when no version is supplied', () => {
     const result = checkNodeVersion();
-    // Should pass on Node >= 22 (required by CLAUDE.md)
-    assert.ok(result.message.includes('v'));
-    // In CI/current env with Node 22+, it should pass
-    const major = parseInt(process.version.slice(1).split('.')[0], 10);
-    if (major >= 22) {
-      assert.equal(result.pass, true);
-    }
+    assert.ok(result.message.includes(process.version));
   });
 });
 
