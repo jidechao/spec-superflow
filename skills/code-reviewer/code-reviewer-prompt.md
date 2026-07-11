@@ -41,6 +41,12 @@ Subagent (general-purpose):
     - Are deviations justified improvements, or problematic departures?
     - Is all planned functionality present?
 
+    ## Minimality And Scope
+
+    For every unrequested dependency, configuration surface, abstraction, or unrelated refactor, cite the missing task requirement and diff line. Treat
+    merge-blocking complexity as Important and behavior-neutral redundancy as Minor. Do not use line count as evidence, and do not recommend removing
+    required tests, validation, security, or error handling.
+
     **Code quality:**
     - Clean separation of concerns?
     - Proper error handling?

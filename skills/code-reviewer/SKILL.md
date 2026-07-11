@@ -18,6 +18,12 @@ Two responsibilities: requesting review (dispatching a reviewer subagent) and re
 3. Fill placeholders: `[DESCRIPTION]` (what was built), `[PLAN_OR_REQUIREMENTS]` (contract/spec reference), `[BASE_SHA]`, `[HEAD_SHA]`
 4. Act on feedback: fix Critical immediately, fix Important before proceeding, note Minor for later, push back with reasoning if reviewer is wrong
 
+### Minimality And Scope
+
+For unrequested complexity, cite the missing task requirement and diff line.
+Use Important for merge-blocking complexity and Minor for safe,
+behavior-neutral redundancy; never score by line count.
+
 ## Part 2: Receiving Review Feedback
 
 ### The Response Pattern
