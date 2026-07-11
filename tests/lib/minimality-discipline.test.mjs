@@ -21,5 +21,6 @@ describe('minimality discipline: broad reviewer', () => {
     assert.match(prompt, /merge-blocking complexity as Important/);
     assert.match(prompt, /behavior-neutral redundancy as Minor/);
     assert.match(prompt, /Do not use line count as evidence/);
+    assert.match(prompt, /do not recommend removing\s+required tests, validation, security, or error handling/);
   });
 });
