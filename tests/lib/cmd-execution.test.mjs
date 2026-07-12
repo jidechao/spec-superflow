@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -26,14 +26,19 @@ function tryJson(text) {
   try { return JSON.parse(text); } catch { return null; }
 }
 
-function writeChangeDirectory(directory, workflow = 'full') {
+function writeChangeDirectory(directory, workflow = 'full', revision = null) {
   writeFileSync(join(directory, 'proposal.md'), '## Why\nEnough context to create a controlled execution plan.\n## What Changes\n- Guard execution.\n');
   writeFileSync(join(directory, 'design.md'), '# Design\n');
   writeFileSync(join(directory, 'tasks.md'), '# Tasks\n\n- [ ] 1.1 First task\n- [ ] 1.2 Second task\n');
   writeFileSync(join(directory, 'execution-contract.md'), '# Execution Contract\n');
   mkdirSync(join(directory, 'specs', 'execution'), { recursive: true });
   writeFileSync(join(directory, 'specs', 'execution', 'spec.md'), '## ADDED Requirements\n### Requirement: Guarded execution\nThe system SHALL guard execution.\n#### Scenario: Create plan\n- **WHEN** a plan is created\n- **THEN** it is persisted.\n');
-  writeFileSync(join(directory, '.spec-superflow.yaml'), `state: approved-for-build\nworkflow: ${workflow}\n`);
+  writeFileSync(join(directory, '.spec-superflow.yaml'), [
+    'state: approved-for-build',
+    `workflow: ${workflow}`,
+    revision === null ? null : `revision: ${revision}`,
+    '',
+  ].filter(line => line !== null).join('\n'));
 }
 
 beforeEach(() => {
@@ -67,6 +72,22 @@ describe('ssf execution', () => {
     assert.match(result.stderr, /override/i);
   });
 
+  it('rejects multiline and control-character reasons before mutating the plan or state', () => {
+    const statePath = join(changeDir, '.spec-superflow.yaml');
+    const planPath = join(changeDir, '.superpowers', 'sdd', 'execution-plan.json');
+    const originalState = readFileSync(statePath, 'utf8');
+
+    for (const reason of ['approved\nexecution_mode: inline', 'approved\u0001inline']) {
+      const result = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', reason,
+        '--wave', 'wave-1:parallel:1.1,1.2', '--json']);
+
+      assert.notEqual(result.exitCode, 0);
+      assert.match(result.stderr, /reason.*control|reason.*line/i);
+      assert.equal(readFileSync(statePath, 'utf8'), originalState);
+      assert.equal(existsSync(planPath), false);
+    }
+  });
+
   it('shows the persisted execution plan', () => {
     runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'full workflow default',
       '--wave', 'wave-1:parallel:1.1,1.2']);
@@ -76,6 +97,19 @@ describe('ssf execution', () => {
     assert.equal(result.exitCode, 0, result.stderr);
     assert.equal(result.json.plan.mode, 'sdd');
     assert.equal(result.json.valid, true);
+  });
+
+  it('rejects a plan when state mode differs from the frozen plan mode', () => {
+    runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'full workflow default',
+      '--wave', 'wave-1:parallel:1.1,1.2']);
+    const statePath = join(changeDir, '.spec-superflow.yaml');
+    writeFileSync(statePath, readFileSync(statePath, 'utf8').replace('execution_mode: sdd', 'execution_mode: inline'));
+
+    const result = runSsf(['execution', 'show', changeDir, '--json']);
+
+    assert.notEqual(result.exitCode, 0);
+    assert.equal(result.json.valid, false);
+    assert.ok(result.json.failures.includes('execution plan mode does not match state'));
   });
 
   it('increments revision when a batch-inline plan is revised to SDD', () => {
@@ -89,6 +123,29 @@ describe('ssf execution', () => {
     assert.equal(revised.exitCode, 0, revised.stderr);
     assert.equal(revised.json.plan.revision, 2);
     assert.equal(runSsf(['state', 'get', changeDir, 'execution_plan_revision', '--json']).json.value, 2);
+  });
+
+  it('keeps the Task 1 state revision aligned through plan, show, revise, and show', () => {
+    writeChangeDirectory(changeDir, 'full', 2);
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--override',
+      '--reason', 'operator requested a batch', '--wave', 'wave-1:serial:1.1', '--json']);
+    assert.equal(initial.exitCode, 0, initial.stderr);
+    assert.equal(initial.json.plan.revision, 2);
+
+    const firstShow = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(firstShow.exitCode, 0, firstShow.stderr);
+    assert.equal(firstShow.json.valid, true);
+    assert.equal(runSsf(['state', 'get', changeDir, 'revision', '--json']).json.value, 2);
+
+    const revised = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd',
+      '--reason', 'risk requires independent review', '--wave', 'wave-1:parallel:1.1,1.2', '--json']);
+    assert.equal(revised.exitCode, 0, revised.stderr);
+    assert.equal(revised.json.plan.revision, 3);
+
+    const secondShow = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(secondShow.exitCode, 0, secondShow.stderr);
+    assert.equal(secondShow.json.valid, true);
+    assert.equal(runSsf(['state', 'get', changeDir, 'revision', '--json']).json.value, 3);
   });
 
   it('rejects an invalid review verdict without writing a receipt', () => {

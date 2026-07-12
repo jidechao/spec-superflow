@@ -7,6 +7,7 @@ const STATE_FILE = '.spec-superflow.yaml';
 const BUILTIN_DEFAULTS = {
   state: 'exploring',
   workflow: 'auto',
+  revision: null,
   artifacts_hash: null,
   contract_hash: null,
   execution_mode: null,
@@ -66,6 +67,7 @@ export function writeState(changeDir, state) {
   lines.push('# === Core state ===');
   lines.push(`state: ${state.state || 'exploring'}`);
   lines.push(`workflow: ${state.workflow || 'auto'}`);
+  lines.push(`revision: ${state.revision ?? 'null'}`);
   lines.push('');
   lines.push('# === Hashes (fast staleness detection) ===');
   lines.push(`artifacts_hash: ${state.artifacts_hash ?? 'null'}`);

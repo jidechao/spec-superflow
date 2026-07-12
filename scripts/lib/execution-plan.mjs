@@ -62,6 +62,9 @@ export function validatePlan(changeDir, plan) {
   if (state.execution_plan_hash !== plan?.hash) {
     failures.push('execution plan summary does not match state');
   }
+  if (state.execution_mode !== plan?.mode) {
+    failures.push('execution plan mode does not match state');
+  }
   if (plan?.artifacts_hash !== computeArtifactsHash(changeDir)) {
     failures.push('execution plan is stale: artifacts hash mismatch');
   }
@@ -206,6 +209,8 @@ function writeExecutionPlanSummary(changeDir, plan) {
     ? readFileSync(statePath, 'utf8')
     : `state: ${state.state}\nworkflow: ${state.workflow}\n`;
   const content = [
+    ['revision', plan.revision],
+    ['execution_mode', plan.mode],
     ['execution_plan_hash', plan.hash],
     ['execution_plan_revision', plan.revision],
   ].reduce((current, [field, value]) => setStateField(current, field, value), original);

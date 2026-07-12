@@ -1,6 +1,6 @@
 import { parseArgs } from 'node:util';
 import { createPlan, EXECUTION_MODES, readPlan, recordReview, validatePlan, writePlan } from './execution-plan.mjs';
-import { updateField } from './state-loader.mjs';
+import { readState, writeState } from './state-loader.mjs';
 
 const SUBCOMMANDS = ['plan', 'show', 'revise', 'review'];
 
@@ -46,6 +46,7 @@ export async function run(args) {
 function createAndPrintPlan(changeDir, values, revise) {
   requireMode(values.mode);
   requireOption(values.reason, '--reason');
+  requireSafeReason(values.reason);
   const waves = parseWaves(values.wave);
   const existing = readPlan(changeDir);
   if (revise) {
@@ -103,11 +104,14 @@ function recordAndPrintReview(changeDir, values) {
 
 function writeExecutionSummary(changeDir, plan) {
   const summary = `${plan.mode}: plan revision ${plan.revision}; ${plan.source}; ${plan.rationale}`;
-  updateField(changeDir, 'execution_mode', plan.mode);
-  updateField(changeDir, 'execution_plan_hash', plan.hash);
-  updateField(changeDir, 'execution_plan_revision', String(plan.revision));
-  updateField(changeDir, 'dp_4_result', summary);
-  updateField(changeDir, 'dp_4_timestamp', new Date().toISOString());
+  const state = readState(changeDir);
+  state.revision = plan.revision;
+  state.execution_mode = plan.mode;
+  state.execution_plan_hash = plan.hash;
+  state.execution_plan_revision = plan.revision;
+  state.dp_4_result = summary;
+  state.dp_4_timestamp = new Date().toISOString();
+  writeState(changeDir, state);
 }
 
 function parseWaves(values) {
@@ -131,6 +135,12 @@ function requireMode(mode) {
 
 function requireOption(value, option) {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${option} is required`);
+}
+
+function requireSafeReason(reason) {
+  if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(reason)) {
+    throw new Error('--reason must not contain control characters or line separators');
+  }
 }
 
 function usage(message) {
