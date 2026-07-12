@@ -24,7 +24,7 @@ const TRANSITION_CHECKS = {
 
   // Debugging side-path
   'executing:debugging':            [],
-  'debugging:executing':            ['contract-fresh'],
+  'debugging:executing':            ['contract-fresh', 'execution-plan-ready'],
 
   // Fast-path transitions are workflow-gated; full workflow must reject them explicitly.
   'exploring:bridging':             [],
@@ -60,6 +60,7 @@ const WORKFLOW_TRANSITION_CHECKS = {
     // execution-plan and per-wave review receipt requirements.
     'approved-for-build:executing': ['artifacts-exist', 'contract-fresh', 'dp-gate-passed'],
     'executing:closing': ['tasks-complete', 'tests-passing', 'specs-merged'],
+    'debugging:executing': ['contract-fresh'],
   },
 };
 

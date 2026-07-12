@@ -304,6 +304,83 @@ describe('guard: execution control records', () => {
     assert.match(planCheck.failures.join('\n'), /plan.*missing|execution plan/i);
   });
 
+  it('rejects a debugging return without a current execution plan in full workflow', () => {
+    prepareFreshFullState();
+
+    const result = run('debugging', 'executing');
+
+    assert.equal(result.exitCode, 1);
+    const planCheck = result.output.checks.find(check => check.dimension === 'execution-plan-ready');
+    assert.ok(planCheck);
+    assert.equal(planCheck.pass, false);
+    assert.match(planCheck.failures.join('\n'), /plan.*missing|execution plan/i);
+  });
+
+  it('rejects a debugging return without a current execution plan in hotfix workflow', () => {
+    prepareFreshFullState();
+    setStateField('workflow', 'hotfix');
+
+    const result = run('debugging', 'executing', 'hotfix');
+
+    assert.equal(result.exitCode, 1);
+    const planCheck = result.output.checks.find(check => check.dimension === 'execution-plan-ready');
+    assert.ok(planCheck);
+    assert.equal(planCheck.pass, false);
+    assert.match(planCheck.failures.join('\n'), /plan.*missing|execution plan/i);
+  });
+
+  it('keeps a debugging return in tweak workflow limited to contract freshness', () => {
+    prepareFreshFullState();
+    setStateField('workflow', 'tweak');
+
+    const result = run('debugging', 'executing', 'tweak');
+
+    assert.equal(result.exitCode, 0, JSON.stringify(result.output));
+    assert.deepEqual(result.output.checks.map(check => check.dimension), ['contract-fresh']);
+  });
+
+  it('rejects a debugging return when the execution plan is stale', () => {
+    prepareFreshFullState();
+    createCurrentPlan();
+    writeFileSync(join(dir, 'tasks.md'), '# Tasks\n\n- [x] 1.1 Changed task\n');
+
+    const result = run('debugging', 'executing');
+
+    assert.equal(result.exitCode, 1);
+    const planCheck = result.output.checks.find(check => check.dimension === 'execution-plan-ready');
+    assert.ok(planCheck);
+    assert.equal(planCheck.pass, false);
+    assert.match(planCheck.failures.join('\n'), /stale: artifacts hash mismatch/i);
+  });
+
+  it('rejects a debugging return when the execution plan mode mismatches state', () => {
+    prepareFreshFullState();
+    createCurrentPlan();
+    setStateField('execution_mode', 'inline');
+
+    const result = run('debugging', 'executing');
+
+    assert.equal(result.exitCode, 1);
+    const planCheck = result.output.checks.find(check => check.dimension === 'execution-plan-ready');
+    assert.ok(planCheck);
+    assert.equal(planCheck.pass, false);
+    assert.match(planCheck.failures.join('\n'), /mode does not match state/i);
+  });
+
+  it('rejects a debugging return when DP-4 forges the current plan revision', () => {
+    prepareFreshFullState();
+    createCurrentPlan();
+    setStateField('dp_4_result', 'sdd: plan revision 10; forged revision reference');
+
+    const result = run('debugging', 'executing');
+
+    assert.equal(result.exitCode, 1);
+    const planCheck = result.output.checks.find(check => check.dimension === 'execution-plan-ready');
+    assert.ok(planCheck);
+    assert.equal(planCheck.pass, false);
+    assert.match(planCheck.failures.join('\n'), /DP-4.*revision/i);
+  });
+
   it('rejects DP-4 that names a different execution plan revision', () => {
     prepareFreshFullState();
     createCurrentPlan();
