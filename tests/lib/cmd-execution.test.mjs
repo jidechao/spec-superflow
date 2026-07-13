@@ -118,6 +118,22 @@ describe('ssf execution', () => {
     }]);
   });
 
+  it('does not show a pass receipt after its report evidence is deleted', () => {
+    runSsf(['execution', 'plan', changeDir, '--mode', 'sdd', '--reason', 'full workflow default',
+      '--wave', 'wave-1:serial:1.1']);
+    const reportPath = writeReviewReport('wave-1.md');
+    const reviewed = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
+      '--base', 'abc1234', '--head', 'def5678', '--report', reportPath, '--verdict', 'pass']);
+    assert.equal(reviewed.exitCode, 0, reviewed.stderr);
+
+    rmSync(reportPath);
+
+    const shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.waves[0].receipt, null);
+    assert.equal(shown.json.waves[0].eligible, true);
+  });
+
   it('encodes wave dependencies and refuses review of a wave before its dependencies pass', () => {
     const planned = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
       '--reason', 'full workflow default',

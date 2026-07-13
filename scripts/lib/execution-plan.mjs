@@ -130,7 +130,12 @@ export function readCurrentReview(changeDir, waveId, plan = readPlan(changeDir))
   if (!existsSync(filePath)) return null;
   try {
     const receipt = JSON.parse(readFileSync(filePath, 'utf8'));
-    return receipt?.plan_hash === plan.hash && receipt?.plan_revision === plan.revision ? receipt : null;
+    if (receipt?.plan_hash !== plan.hash || receipt?.plan_revision !== plan.revision) return null;
+    // A passing receipt is current evidence only while its referenced report
+    // remains safe and readable. Recheck it here because reports can be
+    // deleted or replaced after the receipt was recorded.
+    if (receipt?.status === 'pass') validateReviewReportEvidence(receipt.report);
+    return receipt;
   } catch {
     return null;
   }

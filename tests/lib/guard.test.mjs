@@ -2,7 +2,7 @@
 // Tests for scripts/guard/guard.mjs — transition matrix and workflow behavior
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -482,6 +482,61 @@ describe('guard: execution control records', () => {
 
     assert.equal(result.exitCode, 0, JSON.stringify(result.output));
     assert.equal(result.output.checks.find(check => check.dimension === 'execution-reviews-passed').pass, true);
+  });
+
+  it('blocks closing when a persisted passing review report is no longer safe evidence', () => {
+    const replacements = [
+      {
+        name: 'deleted',
+        replace: reportPath => rmSync(reportPath),
+      },
+      {
+        name: 'empty',
+        replace: reportPath => writeFileSync(reportPath, ''),
+      },
+      {
+        name: 'directory',
+        replace: reportPath => {
+          rmSync(reportPath);
+          mkdirSync(reportPath);
+        },
+      },
+      {
+        name: 'symbolic link',
+        replace: reportPath => {
+          rmSync(reportPath);
+          symlinkSync(writeReviewReport('replacement-target.md'), reportPath);
+        },
+      },
+      {
+        name: 'control-character path',
+        replace: reportPath => {
+          const receiptPath = join(dir, '.superpowers', 'sdd', 'reviews', `${Buffer.from('wave-1').toString('base64url')}.json`);
+          const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
+          receipt.report = `${reportPath}\nforged`;
+          writeFileSync(receiptPath, `${JSON.stringify(receipt)}\n`);
+        },
+      },
+    ];
+
+    for (const replacement of replacements) {
+      prepareFreshFullState();
+      createCurrentPlan();
+      recordPassingClosingPrerequisites();
+      const waveOneReport = writeReviewReport('wave-1.md');
+      runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-1',
+        '--base', 'base-1', '--head', 'head-1', '--report', waveOneReport, '--verdict', 'pass']);
+      runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-2',
+        '--base', 'base-2', '--head', 'head-2', '--report', writeReviewReport('wave-2.md'), '--verdict', 'pass']);
+
+      replacement.replace(waveOneReport);
+
+      const result = run('executing', 'closing');
+      const reviewCheck = result.output.checks.find(check => check.dimension === 'execution-reviews-passed');
+      assert.equal(result.exitCode, 1, replacement.name);
+      assert.equal(reviewCheck.pass, false, replacement.name);
+      assert.match(reviewCheck.failures.join('\n'), /wave-1|receipt/i, replacement.name);
+    }
   });
 });
 
