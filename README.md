@@ -213,6 +213,8 @@ ssf execution review changes/my-change --wave foundation --base <sha> --head <sh
 `--report` 相对于 `<change>` 解析，且必须位于
 `<change>/.superpowers/sdd/reviews/` 之下。`--base` 和 `--head` 必须是该
 `<change>` Git 工作树中的真实 commit，且 `base` 必须是 `head` 的祖先。
+`<change>/.superpowers/sdd/reviews/` 的目录层级必须是物理、非符号链接目录；
+report 本身必须为普通、非空、非符号链接文件。
 
 每个 wave 的 review receipt 必须是当前 revision 的 `pass`，依赖 wave 和 closing
 才会放行；修订计划会使旧 receipt 失效。恢复、切换和手动保存等 #47 的 slash

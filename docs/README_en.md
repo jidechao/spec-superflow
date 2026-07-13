@@ -256,6 +256,9 @@ ssf execution review changes/my-change --wave foundation --base <sha> --head <sh
 The `--report` path is resolved relative to `<change>` and must remain under
 `<change>/.superpowers/sdd/reviews/`. `--base` and `--head` must be real commits
 in the `<change>` Git worktree, and `base` must be an ancestor of `head`.
+The `<change>/.superpowers/sdd/reviews/` directory hierarchy must be physical,
+non-symlink directories. The report itself must be a regular, non-empty,
+non-symlink file.
 
 Every planned wave needs a current `pass` review receipt before dependent
 waves or closing may proceed; revising a plan invalidates earlier receipts.

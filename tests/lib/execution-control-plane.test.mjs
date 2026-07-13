@@ -83,6 +83,12 @@ describe('execution control plane instructions', () => {
         `${path} binds review ranges to the change worktree`);
       assert.match(content, /base.*head.*祖先/is,
         `${path} requires base to precede head`);
+      assert.match(content,
+        /<change>\/.superpowers\/sdd\/reviews\/.*物理.*非符号链接/is,
+        `${path} requires physical, non-symlink review overlay directories`);
+      assert.match(content,
+        /report.*普通.*非空.*非符号链接.*文件/is,
+        `${path} requires review reports to be regular, non-empty, non-symlink files`);
     }
 
     const english = read('docs/README_en.md');
@@ -95,6 +101,12 @@ describe('execution control plane instructions', () => {
       'English documentation binds review ranges to the change worktree');
     assert.match(english, /base.*ancestor.*head/is,
       'English documentation requires base to precede head');
+    assert.match(english,
+      /<change>\/.superpowers\/sdd\/reviews\/.*physical.*non-symlink/is,
+      'English documentation requires physical, non-symlink review overlay directories');
+    assert.match(english,
+      /report.*regular.*non-empty.*non-symlink.*file/is,
+      'English documentation requires review reports to be regular, non-empty, non-symlink files');
   });
 
   it('keeps execution mode and review gates machine-backed in every entry point', () => {
