@@ -29,4 +29,14 @@ describe('BUG/#29: install-zcode deploys skills', () => {
     assert.equal(content.includes('${CLAUDE_PLUGIN_ROOT}'), false, 'CLAUDE_PLUGIN_ROOT should be rewritten to an absolute path');
     assert.equal(existsSync(join(cwd, '.zcode', 'rules', 'phase-guard.mdc')), true, 'phase guard should be written');
   });
+
+  it('SHALL give contract-builder the deployed execution-contract template path', () => {
+    execSync(`node ${CLI} install-zcode --local "${ROOT}"`, { cwd, stdio: 'pipe', timeout: 60000 });
+
+    const templatePath = join(cwd, '.zcode', 'spec-superflow', 'templates', 'execution-contract.md');
+    const contractBuilder = readFileSync(join(cwd, '.zcode', 'skills', 'contract-builder', 'SKILL.md'), 'utf-8');
+
+    assert.equal(existsSync(templatePath), true, 'deployed template should exist');
+    assert.equal(contractBuilder.includes(templatePath), true, 'contract-builder should reference the deployed template');
+  });
 });
