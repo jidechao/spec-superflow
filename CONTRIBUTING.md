@@ -63,7 +63,18 @@ If you add an example under `docs/examples/<change-name>/`, include:
 - `tasks.md`
 - `execution-contract.md`
 
-### 4. Prefer operational wording
+### 4. Repository Artifact Boundaries
+
+`docs/examples/` is the public location for complete example change sets.
+The following root-local paths are working artifacts and must remain local and
+uncommitted:
+
+- `changes/`
+- `.superpowers/`
+- `docs/superpowers/`
+- `contest-2026/`
+
+### 5. Prefer operational wording
 
 Skill text should help an agent decide:
 
