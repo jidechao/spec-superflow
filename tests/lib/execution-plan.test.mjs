@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -9,12 +10,14 @@ import {
 import { readState } from '../../scripts/lib/state-loader.mjs';
 
 let changeDir;
+let gitRefs;
 
 beforeEach(() => {
   changeDir = mkdtempSync(join(tmpdir(), 'execution-plan-'));
   writeFileSync(join(changeDir, 'tasks.md'), '# Tasks\n\n- [ ] 1.1 First task\n- [ ] 1.2 Second task\n');
   writeFileSync(join(changeDir, 'execution-contract.md'), '# Execution Contract\n\nCurrent contract.\n');
   writeFileSync(join(changeDir, '.spec-superflow.yaml'), 'state: approved-for-build\nworkflow: full\nrevision: 2\n');
+  gitRefs = initializeGitRepository(changeDir);
 });
 
 afterEach(() => {
@@ -22,11 +25,28 @@ afterEach(() => {
 });
 
 function writeReviewReport(name, content = 'Review completed without blocking findings.\n') {
-  const reportsDir = join(changeDir, 'reports');
+  const reportsDir = join(changeDir, '.superpowers', 'sdd', 'reviews');
   mkdirSync(reportsDir, { recursive: true });
   const reportPath = join(reportsDir, name);
   writeFileSync(reportPath, content);
   return reportPath;
+}
+
+function runGit(directory, args) {
+  return execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
+}
+
+function initializeGitRepository(directory) {
+  runGit(directory, ['init', '--quiet']);
+  runGit(directory, ['config', 'user.email', 'tests@example.invalid']);
+  runGit(directory, ['config', 'user.name', 'Execution Plan Test']);
+  runGit(directory, ['add', '--all']);
+  runGit(directory, ['commit', '--quiet', '--message', 'initial execution plan change']);
+  const base = runGit(directory, ['rev-parse', 'HEAD']);
+  writeFileSync(join(directory, 'git-range-marker.txt'), 'second commit\n');
+  runGit(directory, ['add', 'git-range-marker.txt']);
+  runGit(directory, ['commit', '--quiet', '--message', 'second execution plan change']);
+  return { base, head: runGit(directory, ['rev-parse', 'HEAD']) };
 }
 
 describe('execution plan data contract', () => {
@@ -218,13 +238,13 @@ describe('execution plan data contract', () => {
 
     const reportPath = writeReviewReport('wave-1.md');
     const receipt = recordReview(changeDir, 'wave-1', {
-      status: 'pass', base: 'abc1234', head: 'def5678', report: reportPath,
+      status: 'pass', base: gitRefs.base, head: gitRefs.head, report: reportPath,
     });
 
     assert.equal(receipt.status, 'pass');
     assert.ok(receipt.recorded_at);
     const reviewsDir = join(changeDir, '.superpowers', 'sdd', 'reviews');
-    const receiptFiles = readdirSync(reviewsDir);
+    const receiptFiles = readdirSync(reviewsDir).filter(fileName => fileName.endsWith('.json'));
     assert.equal(receiptFiles.length, 1);
     assert.deepEqual(
       JSON.parse(readFileSync(join(reviewsDir, receiptFiles[0]), 'utf8')),
@@ -232,7 +252,7 @@ describe('execution plan data contract', () => {
     );
     assert.throws(
       () => recordReview(changeDir, 'unknown-wave', {
-        status: 'pass', base: 'abc1234', head: 'def5678', report: reportPath,
+        status: 'pass', base: gitRefs.base, head: gitRefs.head, report: reportPath,
       }),
       /unknown wave/,
     );
@@ -251,19 +271,20 @@ describe('execution plan data contract', () => {
     const percentReport = writeReviewReport('percent.md', 'Percent wave passed.\n');
     const underscoreReport = writeReviewReport('underscore.md', 'Underscore wave failed.\n');
     recordReview(changeDir, 'a%', {
-      status: 'pass', base: 'base-percent', head: 'head-percent', report: percentReport,
+      status: 'pass', base: gitRefs.base, head: gitRefs.head, report: percentReport,
     });
     recordReview(changeDir, 'a_25', {
-      status: 'fail', base: 'base-underscore', head: 'head-underscore', report: underscoreReport,
+      status: 'fail', base: gitRefs.base, head: gitRefs.head, report: underscoreReport,
     });
 
     const reviewsDir = join(changeDir, '.superpowers', 'sdd', 'reviews');
     const receipts = readdirSync(reviewsDir)
+      .filter(fileName => fileName.endsWith('.json'))
       .sort()
       .map(fileName => JSON.parse(readFileSync(join(reviewsDir, fileName), 'utf8')));
     assert.equal(receipts.length, 2);
-    assert.ok(receipts.some(receipt => receipt.report === percentReport));
-    assert.ok(receipts.some(receipt => receipt.report === underscoreReport));
+    assert.ok(receipts.some(receipt => receipt.report === join('.superpowers', 'sdd', 'reviews', 'percent.md')));
+    assert.ok(receipts.some(receipt => receipt.report === join('.superpowers', 'sdd', 'reviews', 'underscore.md')));
   });
 
   it('rejects missing, non-file, empty, and symbolic-link report evidence before writing a receipt', () => {
@@ -273,7 +294,7 @@ describe('execution plan data contract', () => {
     });
     writePlan(changeDir, plan);
 
-    const reportsDir = join(changeDir, 'reports');
+    const reportsDir = join(changeDir, '.superpowers', 'sdd', 'reviews');
     mkdirSync(reportsDir, { recursive: true });
     const emptyReport = join(reportsDir, 'empty.md');
     const directoryReport = join(reportsDir, 'directory');
@@ -290,10 +311,10 @@ describe('execution plan data contract', () => {
       symlinkReport,
     ]) {
       assert.throws(() => recordReview(changeDir, 'wave-1', {
-        status: 'pass', base: 'abc1234', head: 'def5678', report,
+        status: 'pass', base: gitRefs.base, head: gitRefs.head, report,
       }), /report evidence|review report/i);
       assert.equal(lstatSync(join(reportsDir, 'valid.md')).isFile(), true);
-      assert.equal(existsSync(join(changeDir, '.superpowers', 'sdd', 'reviews')), false);
+      assert.equal(readdirSync(reportsDir).filter(fileName => fileName.endsWith('.json')).length, 0);
     }
   });
 
@@ -306,10 +327,10 @@ describe('execution plan data contract', () => {
     const reportPath = writeReviewReport('audit.md');
 
     const receipt = recordReview(changeDir, 'wave-1', {
-      status: 'pass', base: 'abc1234', head: 'def5678', report: reportPath,
+      status: 'pass', base: gitRefs.base, head: gitRefs.head, report: reportPath,
     });
 
-    assert.equal(receipt.report, reportPath);
+    assert.equal(receipt.report, join('.superpowers', 'sdd', 'reviews', 'audit.md'));
   });
 
   it('returns validation failures instead of throwing for malformed plans', () => {

@@ -25,7 +25,25 @@ function makeChangeDir() {
   writeFileSync(join(dir, 'tasks.md'), '# Tasks\n\n- [x] Task 1\n- [x] Task 2\n');
   writeFileSync(join(dir, 'specs', 'test.md'), '## ADDED Requirements\n\n### Requirement: Test\n\nThe system SHALL test.\n\n#### Scenario: Test\n- **WHEN** test\n- **THEN** test\n');
   writeFileSync(join(dir, 'execution-contract.md'), '# Execution Contract\n\n## Intent Lock\nTest.\n');
+  initializeGitRepository(dir);
   return dir;
+}
+
+function runGit(directory, args) {
+  return execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
+}
+
+function initializeGitRepository(directory) {
+  runGit(directory, ['init', '--quiet']);
+  runGit(directory, ['config', 'user.email', 'tests@example.invalid']);
+  runGit(directory, ['config', 'user.name', 'Guard Tests Passing Test']);
+  runGit(directory, ['add', '--all']);
+  runGit(directory, ['commit', '--quiet', '--message', 'initial closing guard change']);
+  const base = runGit(directory, ['rev-parse', 'HEAD']);
+  writeFileSync(join(directory, 'git-range-marker.txt'), 'second commit\n');
+  runGit(directory, ['add', 'git-range-marker.txt']);
+  runGit(directory, ['commit', '--quiet', '--message', 'second closing guard change']);
+  return { base, head: runGit(directory, ['rev-parse', 'HEAD']) };
 }
 
 function cleanup(dir) {
@@ -46,12 +64,15 @@ function runClosingGuard(dir, extraState = '') {
       `state: executing\nworkflow: full\nchange_name: test\nspec_merged: true\n${extraState}`,
     );
     rmSync(join(dir, '.superpowers'), { recursive: true, force: true });
-    const report = join(dir, 'close-review.md');
-    writeFileSync(report, 'review passed\n');
     execFileSync('node', [CLI, 'execution', 'plan', dir, '--mode', 'sdd',
       '--reason', 'closing guard regression fixture', '--wave', 'close:serial:1.1'], { stdio: 'pipe', timeout: 5000 });
+    const report = join(dir, '.superpowers', 'sdd', 'reviews', 'close-review.md');
+    mkdirSync(join(dir, '.superpowers', 'sdd', 'reviews'), { recursive: true });
+    writeFileSync(report, 'review passed\n');
+    const base = runGit(dir, ['rev-parse', 'HEAD~1']);
+    const head = runGit(dir, ['rev-parse', 'HEAD']);
     execFileSync('node', [CLI, 'execution', 'review', dir, '--wave', 'close',
-      '--base', 'base', '--head', 'head', '--report', report, '--verdict', 'pass'], { stdio: 'pipe', timeout: 5000 });
+      '--base', base, '--head', head, '--report', report, '--verdict', 'pass'], { stdio: 'pipe', timeout: 5000 });
     execFileSync('node', [GUARD, 'check', dir, 'executing', 'closing', '--json'], { stdio: 'pipe', timeout: 5000 });
     return { ok: true, stderr: '' };
   } catch (e) {

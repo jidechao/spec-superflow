@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 
 let tempDir;
+let gitRefs;
 const GUARD_PATH = join(process.cwd(), 'scripts/guard/guard.mjs');
 const CLI_PATH = join(process.cwd(), 'scripts/spec-superflow.mjs');
 
@@ -16,6 +17,23 @@ function runNodeScript(scriptPath, args) {
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });
+}
+
+function runGit(directory, args) {
+  return execFileSync('git', args, { cwd: directory, encoding: 'utf8' }).trim();
+}
+
+function initializeGitRepository(directory) {
+  runGit(directory, ['init', '--quiet']);
+  runGit(directory, ['config', 'user.email', 'tests@example.invalid']);
+  runGit(directory, ['config', 'user.name', 'Guard Control Records Test']);
+  runGit(directory, ['add', '--all']);
+  runGit(directory, ['commit', '--quiet', '--message', 'initial guard control records change']);
+  const base = runGit(directory, ['rev-parse', 'HEAD']);
+  writeFileSync(join(directory, 'git-range-marker.txt'), 'second commit\n');
+  runGit(directory, ['add', 'git-range-marker.txt']);
+  runGit(directory, ['commit', '--quiet', '--message', 'second guard control records change']);
+  return { base, head: runGit(directory, ['rev-parse', 'HEAD']) };
 }
 
 describe('guard: transition matrix', () => {
@@ -271,6 +289,7 @@ describe('guard: execution control records', () => {
     writeFileSync(join(dir, 'execution-contract.md'), '# Execution Contract\n\n## Intent Lock\n\nGuard control records.\n');
     writeFileSync(join(dir, '.spec-superflow.yaml'), 'state: approved-for-build\nworkflow: full\n');
     runNodeScript(CLI_PATH, ['state', 'init', dir]);
+    gitRefs = initializeGitRepository(dir);
   }
 
   function createCurrentPlan() {
@@ -292,7 +311,7 @@ describe('guard: execution control records', () => {
   }
 
   function writeReviewReport(name, content = 'Review completed without blocking findings.\n') {
-    const reportsDir = join(dir, 'reports');
+    const reportsDir = join(dir, '.superpowers', 'sdd', 'reviews');
     mkdirSync(reportsDir, { recursive: true });
     const reportPath = join(reportsDir, name);
     writeFileSync(reportPath, content);
@@ -465,9 +484,9 @@ describe('guard: execution control records', () => {
     assert.match(reviewCheck.failures.join('\n'), /wave-1|receipt/i);
 
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-1',
-      '--base', 'base-1', '--head', 'head-1', '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
+      '--base', gitRefs.base, '--head', gitRefs.head, '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-2',
-      '--base', 'base-2', '--head', 'head-2', '--report', writeReviewReport('wave-2.md'), '--verdict', 'fail']);
+      '--base', gitRefs.base, '--head', gitRefs.head, '--report', writeReviewReport('wave-2.md'), '--verdict', 'fail']);
 
     result = run('executing', 'closing');
     reviewCheck = result.output.checks.find(check => check.dimension === 'execution-reviews-passed');
@@ -476,7 +495,7 @@ describe('guard: execution control records', () => {
     assert.match(reviewCheck.failures.join('\n'), /wave-2.*fail/i);
 
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-2',
-      '--base', 'base-2-repair', '--head', 'head-2-repair', '--report', writeReviewReport('wave-2-repair.md'), '--verdict', 'pass']);
+      '--base', gitRefs.base, '--head', gitRefs.head, '--report', writeReviewReport('wave-2-repair.md'), '--verdict', 'pass']);
 
     result = run('executing', 'closing');
     reviewCheck = result.output.checks.find(check => check.dimension === 'execution-reviews-passed');
@@ -489,9 +508,9 @@ describe('guard: execution control records', () => {
     createCurrentPlan();
     recordPassingClosingPrerequisites();
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-1',
-      '--base', 'base-1', '--head', 'head-1', '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
+      '--base', gitRefs.base, '--head', gitRefs.head, '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-2',
-      '--base', 'base-2', '--head', 'head-2', '--report', writeReviewReport('wave-2.md'), '--verdict', 'pass']);
+      '--base', gitRefs.base, '--head', gitRefs.head, '--report', writeReviewReport('wave-2.md'), '--verdict', 'pass']);
 
     const result = run('executing', 'closing');
 
@@ -540,9 +559,9 @@ describe('guard: execution control records', () => {
       recordPassingClosingPrerequisites();
       const waveOneReport = writeReviewReport('wave-1.md');
       runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-1',
-        '--base', 'base-1', '--head', 'head-1', '--report', waveOneReport, '--verdict', 'pass']);
+        '--base', gitRefs.base, '--head', gitRefs.head, '--report', waveOneReport, '--verdict', 'pass']);
       runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-2',
-        '--base', 'base-2', '--head', 'head-2', '--report', writeReviewReport('wave-2.md'), '--verdict', 'pass']);
+        '--base', gitRefs.base, '--head', gitRefs.head, '--report', writeReviewReport('wave-2.md'), '--verdict', 'pass']);
 
       replacement.replace(waveOneReport);
 
