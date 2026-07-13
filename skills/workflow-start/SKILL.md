@@ -22,7 +22,7 @@ Do NOT invoke for: general coding tasks outside spec-superflow changes, casual q
 1. **Update check**: Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/check-update.mjs"`. Exit 0 → continue. Exit 1 → non-blocking upgrade reminder. Exit 2 → skip.
 2. **Inspect change folder**: Check for `proposal.md`, `specs/`, `design.md`, `tasks.md`, `execution-contract.md`. Answer: Is the change fuzzy? Artifacts missing/unstable? Contract exist? User approved contract? Execution in progress or blocked? In verification/wrap-up?
 3. **Overlay recovery scan**: Run `ssf handoff list <change-dir> --json` and `ssf checkpoint list <change-dir> --json`. A `result-ready` handoff requires explicit review and `ssf handoff resolve` before resuming the affected work. An `active` handoff is non-blocking side work. Show a non-stale checkpoint as recovery context; show a stale checkpoint only as historical evidence.
-4. **Execution-control recovery scan**: For `approved-for-build`, `executing`, `debugging`, or `closing`, run `ssf execution show <change-dir> --json`. Report the current plan revision, mode, next eligible wave, and any wave without a `pass` review receipt. A missing, invalid, or stale plan blocks implementation and routes to `build-executor`; do not infer progress from chat history.
+4. **Execution-control recovery scan**: For `approved-for-build`, `executing`, `debugging`, or `closing`, run `ssf execution show <change-dir> --json`. Treat only `current: true` plus `waves[].eligible: true` as permission to start a wave; report plan revision, mode, next eligible wave, and every wave's receipt/blockers. A missing, invalid, or stale plan blocks implementation and routes to `build-executor`; do not infer progress from chat history.
 
 ## DP-0: User Confirmation Gate
 

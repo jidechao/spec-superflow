@@ -24,6 +24,7 @@ describe('execution control plane instructions', () => {
     assert.match(codeReviewer, /Critical\/Important.*fail.*receipt/is);
     assert.match(inject, /execution plan/);
     assert.match(inject, /pass.*review receipts.*closing/is);
+    assert.match(buildExecutor, /<wave-id>:<parallel\|serial>:<task,.+>\[:<depends-on/i);
   });
 
   it('gives every packaged installer the same planned-execution gate', () => {
@@ -36,6 +37,7 @@ describe('execution control plane instructions', () => {
       const content = read(path);
       assert.match(content, /execution plan/);
       assert.match(content, /all.*pass.*review receipt.*closing/is);
+      assert.match(content, /full\/hotfix.*tweak.*exempt/is);
     }
   });
 
@@ -45,9 +47,14 @@ describe('execution control plane instructions', () => {
     const reviewerPrompt = read('skills/code-reviewer/code-reviewer-prompt.md');
 
     assert.match(implementer, /planned wave/i);
+    assert.match(implementer, /implementer report path/i);
     assert.match(taskReviewer, /execution review <change-dir>/);
     assert.match(taskReviewer, /--verdict <pass\|fail>/);
+    assert.match(taskReviewer, /review report\s+path/i);
+    assert.match(taskReviewer, /persisted.*review report/i);
     assert.match(reviewerPrompt, /execution review <change-dir>/);
     assert.match(reviewerPrompt, /wave ID/i);
+    assert.match(reviewerPrompt, /review report\s+path/i);
+    assert.match(reviewerPrompt, /persisted.*review report/i);
   });
 });

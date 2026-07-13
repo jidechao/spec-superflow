@@ -129,8 +129,12 @@ Subagent (general-purpose):
     - Files changed
     - Self-review findings (if any)
     - Any issues or concerns
-    - Planned wave ID, commit base/head, and review report path for the
-      controller to record the wave receipt
+    - Planned wave ID and commit base/head
+
+    `[REPORT_FILE]` is the **implementer report path**. Do not invent or reuse
+    it as review evidence: after a reviewer completes, the controller writes a
+    separate persisted review report and records that separate path in the wave
+    receipt.
 
     Then report back with ONLY (under 15 lines — the detail lives in the
     report file):

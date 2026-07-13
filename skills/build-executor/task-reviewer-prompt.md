@@ -27,7 +27,7 @@ Subagent (general-purpose):
 
     ## What the Implementer Claims They Built
 
-    Read the implementer's report: [REPORT_FILE]
+    Read the implementer's report: [IMPLEMENTER_REPORT_FILE]
 
     ## Diff Under Review
 
@@ -140,10 +140,13 @@ Subagent (general-purpose):
 
     ## Output Format
 
-    After the verdict, provide the exact receipt command for the controller:
+    Write your full review to [REVIEW_REPORT_FILE]. This distinct review report
+    path must point to a non-empty, persisted review report before the
+    controller records a receipt. After the verdict, provide the exact receipt
+    command for the controller:
 
     ```bash
-    ssf execution review <change-dir> --wave [WAVE_ID] --base [BASE_SHA] --head [HEAD_SHA] --report [REPORT_FILE] --verdict <pass|fail>
+    ssf execution review <change-dir> --wave [WAVE_ID] --base [BASE_SHA] --head [HEAD_SHA] --report [REVIEW_REPORT_FILE] --verdict <pass|fail>
     ```
 
     Use `fail` for any Critical/Important finding. A repair must be re-reviewed
@@ -180,7 +183,8 @@ Subagent (general-purpose):
 - `[MODEL]` — REQUIRED: reviewer model per build-executor Model Selection
 - `[BRIEF_FILE]` — REQUIRED: the task brief file (`scripts/task-brief PLAN N` prints the path; same file the implementer worked from)
 - `[GLOBAL_CONSTRAINTS]` — the binding requirements copied verbatim from the plan's Global Constraints section or the spec: exact values, formats, and stated relationships between components (not process rules — those are already in this template)
-- `[REPORT_FILE]` — REQUIRED: the file the implementer wrote its detailed report to
+- `[IMPLEMENTER_REPORT_FILE]` — REQUIRED: the file the implementer wrote its detailed report to
+- `[REVIEW_REPORT_FILE]` — REQUIRED: a distinct, persisted, non-empty file where the reviewer writes this review; this exact path is stored in the receipt
 - `[BASE_SHA]` — commit before this task
 - `[HEAD_SHA]` — current commit
 - `[DIFF_FILE]` — REQUIRED: the path the controller wrote the review package to (`scripts/review-package BASE HEAD` prints the unique path it wrote; the package never enters the controller's context)

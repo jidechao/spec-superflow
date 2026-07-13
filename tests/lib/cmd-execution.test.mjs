@@ -97,6 +97,36 @@ describe('ssf execution', () => {
     assert.equal(result.exitCode, 0, result.stderr);
     assert.equal(result.json.plan.mode, 'sdd');
     assert.equal(result.json.valid, true);
+    assert.equal(result.json.current, true);
+    assert.deepEqual(result.json.waves, [{
+      id: 'wave-1',
+      strategy: 'parallel',
+      tasks: ['1.1', '1.2'],
+      depends_on: [],
+      eligible: true,
+      receipt: null,
+      blockers: [],
+    }]);
+  });
+
+  it('encodes wave dependencies and refuses review of a wave before its dependencies pass', () => {
+    const planned = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
+      '--reason', 'full workflow default',
+      '--wave', 'wave-1:parallel:1.1,1.2',
+      '--wave', 'wave-2:serial:2.1:wave-1', '--json']);
+    assert.equal(planned.exitCode, 0, planned.stderr);
+    assert.deepEqual(planned.json.plan.waves[1].depends_on, ['wave-1']);
+
+    const shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.waves[0].eligible, true);
+    assert.equal(shown.json.waves[1].eligible, false);
+    assert.deepEqual(shown.json.waves[1].blockers, ['wave-1']);
+
+    const premature = runSsf(['execution', 'review', changeDir, '--wave', 'wave-2',
+      '--base', 'abc1234', '--head', 'def5678', '--report', 'reports/wave-2.md', '--verdict', 'pass']);
+    assert.notEqual(premature.exitCode, 0);
+    assert.match(premature.stderr, /wave-1.*pass|dependencies/i);
   });
 
   it('rejects a plan when state mode differs from the frozen plan mode', () => {
@@ -123,6 +153,25 @@ describe('ssf execution', () => {
     assert.equal(revised.exitCode, 0, revised.stderr);
     assert.equal(revised.json.plan.revision, 2);
     assert.equal(runSsf(['state', 'get', changeDir, 'execution_plan_revision', '--json']).json.value, 2);
+  });
+
+  it('invalidates receipts from the replaced plan revision', () => {
+    const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--override',
+      '--reason', 'operator requested a batch', '--wave', 'wave-1:serial:1.1']);
+    assert.equal(initial.exitCode, 0, initial.stderr);
+    const reviewed = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
+      '--base', 'abc1234', '--head', 'def5678', '--report', 'reports/wave-1.md', '--verdict', 'pass']);
+    assert.equal(reviewed.exitCode, 0, reviewed.stderr);
+
+    const revised = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd',
+      '--reason', 'risk requires independent review', '--wave', 'wave-1:parallel:1.1,1.2', '--json']);
+    assert.equal(revised.exitCode, 0, revised.stderr);
+
+    const shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.current, true);
+    assert.equal(shown.json.waves[0].receipt, null);
+    assert.equal(shown.json.waves[0].eligible, true);
   });
 
   it('keeps the Task 1 state revision aligned through plan, show, revise, and show', () => {

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { computeArtifactsHash, computeContractHash } from './hash.mjs';
 import { getOverlayPaths } from './sdd-overlay.mjs';
@@ -47,6 +47,12 @@ export function writePlan(changeDir, plan) {
 
   const paths = getOverlayPaths(changeDir);
   mkdirSync(paths.root, { recursive: true });
+  const previousPlan = readPlan(changeDir);
+  if (previousPlan && (previousPlan.revision !== plan.revision || previousPlan.hash !== plan.hash)) {
+    // Review evidence is scoped to exactly one plan revision. Removing it on
+    // revision prevents an old wave ID from satisfying a changed plan.
+    rmSync(paths.reviews, { recursive: true, force: true });
+  }
   atomicWrite(paths.executionPlan, `${JSON.stringify(plan, null, 2)}\n`);
   writeExecutionPlanSummary(changeDir, plan);
   return readPlan(changeDir);
@@ -85,8 +91,14 @@ export function validatePlan(changeDir, plan) {
 
 export function recordReview(changeDir, waveId, receipt) {
   const plan = readPlan(changeDir);
-  const knownWave = Array.isArray(plan?.waves) && plan.waves.some(wave => wave?.id === waveId);
-  if (!knownWave) throw new Error(`Review receipt references unknown wave '${waveId}'`);
+  const validation = validatePlan(changeDir, plan);
+  if (!validation.valid) throw new Error(`Cannot record a review for an invalid execution plan: ${validation.failures.join('; ')}`);
+  const wave = Array.isArray(plan?.waves) && plan.waves.find(candidate => candidate?.id === waveId);
+  if (!wave) throw new Error(`Review receipt references unknown wave '${waveId}'`);
+  const blockedBy = blockedDependencies(changeDir, plan, wave);
+  if (blockedBy.length > 0) {
+    throw new Error(`Wave '${waveId}' cannot be reviewed before dependencies have passing receipts: ${blockedBy.join(', ')}`);
+  }
   if (!REVIEW_STATUSES.has(receipt?.status)) {
     throw new Error("Review receipt status must be 'pass' or 'fail'");
   }
@@ -97,12 +109,57 @@ export function recordReview(changeDir, waveId, receipt) {
     base: receipt.base,
     head: receipt.head,
     report: receipt.report,
+    plan_hash: plan.hash,
+    plan_revision: plan.revision,
     recorded_at: new Date().toISOString(),
   };
   const paths = getOverlayPaths(changeDir);
   mkdirSync(paths.reviews, { recursive: true });
   atomicWrite(join(paths.reviews, `${safeFileName(waveId)}.json`), `${JSON.stringify(savedReceipt, null, 2)}\n`);
   return savedReceipt;
+}
+
+/**
+ * Returns the current plan's receipt for one wave. Receipts from a previous
+ * revision/hash are never evidence for the current plan.
+ */
+export function readCurrentReview(changeDir, waveId, plan = readPlan(changeDir)) {
+  if (!plan) return null;
+  const filePath = join(getOverlayPaths(changeDir).reviews, `${safeFileName(waveId)}.json`);
+  if (!existsSync(filePath)) return null;
+  try {
+    const receipt = JSON.parse(readFileSync(filePath, 'utf8'));
+    return receipt?.plan_hash === plan.hash && receipt?.plan_revision === plan.revision ? receipt : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Machine-readable execution status used by `ssf execution show`. A wave is
+ * eligible only when it has no current receipt and all declared dependencies
+ * have a current passing receipt.
+ */
+export function describeWaves(changeDir, plan = readPlan(changeDir)) {
+  if (!plan || !Array.isArray(plan.waves)) return [];
+  return plan.waves.map(wave => {
+    const receipt = readCurrentReview(changeDir, wave.id, plan);
+    const blockers = blockedDependencies(changeDir, plan, wave);
+    return {
+      id: wave.id,
+      strategy: wave.strategy,
+      tasks: wave.tasks,
+      depends_on: wave.depends_on,
+      eligible: receipt === null && blockers.length === 0,
+      receipt,
+      blockers,
+    };
+  });
+}
+
+function blockedDependencies(changeDir, plan, wave) {
+  if (!Array.isArray(wave?.depends_on)) return [];
+  return wave.depends_on.filter(dependency => readCurrentReview(changeDir, dependency, plan)?.status !== 'pass');
 }
 
 function validateStructure(plan) {

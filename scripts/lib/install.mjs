@@ -132,6 +132,7 @@ function phaseGuardContent(rulesFormat, platformId) {
 - 没有 execution-contract.md 或未经用户明确批准，不得进入实现。
 - full/hotfix 必须先运行 ssf execution plan <change-dir> ...；没有 current execution plan 不得开始实现。
 - 只有 all pass review receipts 后才可 closing；不得把未审查的 wave 当作完成。
+- 上述 plan/receipt gates 仅适用于 full/hotfix；tweak 免除这些 gates (tweak exempt)。
 - 执行过程中如果发现需求/范围变化，必须回退到 specifying 或 bridging，而不是直接改代码。
 - 不要直接调用执行类 skill（如 "/build-executor"），必须通过入口路由。
 

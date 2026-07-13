@@ -87,11 +87,13 @@ Subagent (general-purpose):
 
     ## Output Format
 
-    Include the wave ID, base SHA, head SHA, and review report path. End with
-    the exact receipt command:
+    Write your full verdict to [REVIEW_REPORT_FILE]. This review report path
+    must point to a non-empty, persisted review report before the controller
+    records a receipt. Include the wave ID, base SHA, head SHA, and that review
+    report path. End with the exact receipt command:
 
     ```bash
-    ssf execution review <change-dir> --wave [WAVE_ID] --base [BASE_SHA] --head [HEAD_SHA] --report [REPORT_FILE] --verdict <pass|fail>
+    ssf execution review <change-dir> --wave [WAVE_ID] --base [BASE_SHA] --head [HEAD_SHA] --report [REVIEW_REPORT_FILE] --verdict <pass|fail>
     ```
 
     Use `fail` when any Critical or Important finding remains. A repair needs
@@ -150,7 +152,7 @@ Subagent (general-purpose):
 - `[BASE_SHA]` — starting commit
 - `[HEAD_SHA]` — ending commit
 - `[WAVE_ID]` — planned execution wave under review
-- `[REPORT_FILE]` — review report path stored in the execution receipt
+- `[REVIEW_REPORT_FILE]` — REQUIRED: distinct, persisted, non-empty review report path stored in the execution receipt
 
 **Reviewer returns:** Strengths, Issues (Critical / Important / Minor), Recommendations, Assessment
 

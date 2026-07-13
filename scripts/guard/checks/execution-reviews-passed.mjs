@@ -1,7 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { readPlan, validatePlan } from '../../lib/execution-plan.mjs';
-import { getOverlayPaths } from '../../lib/sdd-overlay.mjs';
+import { readCurrentReview, readPlan, validatePlan } from '../../lib/execution-plan.mjs';
 
 /**
  * Verifies that every wave in the current execution plan has a passing review
@@ -22,20 +19,11 @@ export function checkExecutionReviewsPassed(changeDir) {
     return { pass: false, failures: validation.failures };
   }
 
-  const reviewsDir = getOverlayPaths(changeDir).reviews;
   const failures = [];
   for (const wave of plan.waves) {
-    const receiptPath = join(reviewsDir, `${safeFileName(wave.id)}.json`);
-    if (!existsSync(receiptPath)) {
+    const receipt = readCurrentReview(changeDir, wave.id, plan);
+    if (!receipt) {
       failures.push(`review receipt missing for planned wave '${wave.id}'. Record a passing review before closing.`);
-      continue;
-    }
-
-    let receipt;
-    try {
-      receipt = JSON.parse(readFileSync(receiptPath, 'utf8'));
-    } catch (error) {
-      failures.push(`review receipt for planned wave '${wave.id}' cannot be read: ${error.message}`);
       continue;
     }
     if (receipt?.status !== 'pass') {
@@ -44,8 +32,4 @@ export function checkExecutionReviewsPassed(changeDir) {
   }
 
   return { pass: failures.length === 0, failures };
-}
-
-function safeFileName(value) {
-  return Buffer.from(value, 'utf8').toString('base64url');
 }

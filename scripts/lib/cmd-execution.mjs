@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { createPlan, EXECUTION_MODES, readPlan, recordReview, validatePlan, writePlan } from './execution-plan.mjs';
+import { createPlan, describeWaves, EXECUTION_MODES, readPlan, recordReview, validatePlan, writePlan } from './execution-plan.mjs';
 import { readState, writeState } from './state-loader.mjs';
 
 const SUBCOMMANDS = ['plan', 'show', 'revise', 'review'];
@@ -81,7 +81,9 @@ function showPlan(changeDir, json) {
   const plan = readPlan(changeDir);
   if (!plan) throw new Error('No execution plan has been recorded');
   const validation = validatePlan(changeDir, plan);
-  print(json, { ok: validation.valid, plan, valid: validation.valid, failures: validation.failures },
+  const current = validation.valid;
+  const waves = describeWaves(changeDir, plan);
+  print(json, { ok: current, current, plan, valid: current, failures: validation.failures, waves },
     validation.valid ? `Execution plan revision ${plan.revision} is current.` : validation.failures.join('\n'));
   if (!validation.valid) process.exitCode = 1;
 }
@@ -117,13 +119,17 @@ function writeExecutionSummary(changeDir, plan) {
 function parseWaves(values) {
   if (!values || values.length === 0) throw new Error('At least one --wave <id>:<strategy>:<task,...> is required');
   return values.map(value => {
-    const [id, strategy, taskList, ...extra] = value.split(':');
+    const [id, strategy, taskList, dependencyList, ...extra] = value.split(':');
     if (extra.length > 0 || !id || !strategy || !taskList) {
-      throw new Error(`Invalid --wave '${value}'; expected <id>:<strategy>:<task,...>`);
+      throw new Error(`Invalid --wave '${value}'; expected <id>:<strategy>:<task,...>[:<depends-on,...>]`);
     }
     const tasks = taskList.split(',').map(task => task.trim()).filter(Boolean);
     if (tasks.length === 0) throw new Error(`Invalid --wave '${value}'; at least one task is required`);
-    return { id, strategy, tasks, depends_on: [] };
+    const depends_on = dependencyList === undefined ? [] : dependencyList.split(',').map(id => id.trim()).filter(Boolean);
+    if (dependencyList !== undefined && depends_on.length === 0) {
+      throw new Error(`Invalid --wave '${value}'; dependencies must name at least one wave`);
+    }
+    return { id, strategy, tasks, depends_on };
   });
 }
 
@@ -155,8 +161,8 @@ function print(json, value, message) {
 
 function printHelp() {
   console.log(`Usage:
-  ssf execution plan <dir> --mode <mode> --reason <text> --wave <id>:<strategy>:<task,...> [--override]
+  ssf execution plan <dir> --mode <mode> --reason <text> --wave <id>:<strategy>:<task,...>[:<depends-on,...>] [--override]
   ssf execution show <dir> [--json]
-  ssf execution revise <dir> --mode sdd --reason <text> --wave <id>:<strategy>:<task,...>
+  ssf execution revise <dir> --mode sdd --reason <text> --wave <id>:<strategy>:<task,...>[:<depends-on,...>]
   ssf execution review <dir> --wave <id> --base <sha> --head <sha> --report <path> --verdict pass|fail`);
 }
