@@ -54,7 +54,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" execution plan <change-d
 node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" execution show <change-dir> --json
 ```
 
-The optional fourth `--wave` segment names prerequisite wave IDs. `execution show --json` reports `current`, plus each wave's `depends_on`, `receipt`, `blockers`, and `eligible` status; only `eligible: true` waves may be started. Report the saved plan revision, selected mode, ordered waves, dependencies, and whether every `parallel` wave can actually be dispatched concurrently on the current platform. If concurrency is unavailable, state the capability and reason plainly; retain the planned `parallel` strategy and do not silently execute it as a serial or Batch Inline plan.
+The optional fourth `--wave` segment names prerequisite wave IDs. `execution show --json` reports `current`, plus each wave's `depends_on`, `receipt`, `blockers`, `retryable`, and `eligible` status. A wave with `retryable: true` has a current `fail` receipt and is eligible only for its focused repair and re-review; its dependents remain blocked until its replacement `pass` receipt. Report the saved plan revision, selected mode, ordered waves, dependencies, and whether every `parallel` wave can actually be dispatched concurrently on the current platform. If concurrency is unavailable, state the capability and reason plainly; retain the planned `parallel` strategy and do not silently execute it as a serial or Batch Inline plan.
 
 `inline` and `batch-inline` are available only through an **explicit user override**. Record that request with `--override`; task count, module locality, estimated effort, or `execution.inlineThreshold` never auto-selects either mode.
 
@@ -79,10 +79,10 @@ Boundaries: if any task touches >1 module, involves schema/API/config changes, o
 For full/hotfix by default. Dispatch according to the persisted plan, review each planned wave, and run a final broad review after all waves.
 
 ### Planned-Wave Loop
-1. Read the current plan with `ssf execution show <change-dir> --json`; only waves shown with `current: true` and `eligible: true` may start. The CLI encodes dependencies in `--wave <id>:<strategy>:<tasks>[:<depends-on,...>]` and rejects a review receipt for a wave whose prerequisites lack current `pass` receipts.
+1. Read the current plan with `ssf execution show <change-dir> --json`; only waves shown with `current: true` and `eligible: true` may start. A `retryable: true` wave may only be repaired and re-reviewed; do not dispatch its dependents until its replacement receipt is `pass`. The CLI encodes dependencies in `--wave <id>:<strategy>:<tasks>[:<depends-on,...>]` and rejects a review receipt for a wave whose prerequisites lack current `pass` receipts.
 2. A `parallel` wave may dispatch independent tasks simultaneously only when the platform supports concurrent dispatch. If it does not, disclose the unavailable capability and execute the same wave one task at a time without changing its stored strategy.
 3. A `serial` wave dispatches one task at a time in listed order.
-4. After every wave, write a non-empty persisted review report (separate from the implementer's report), then record exactly one receipt that names that review report:
+4. After every wave, write a non-empty persisted regular-file review report (separate from the implementer's report), then record exactly one receipt that names that review report:
    ```bash
    node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" execution review <change-dir> \
      --wave <wave-id> --base <sha> --head <sha> --report <review-report-path> --verdict <pass|fail>

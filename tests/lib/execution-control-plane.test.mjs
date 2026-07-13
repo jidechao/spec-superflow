@@ -19,6 +19,7 @@ describe('execution control plane instructions', () => {
     assert.match(buildExecutor, /explicit user override/i);
     assert.match(buildExecutor, /parallel.*wave/is);
     assert.match(buildExecutor, /concurren(?:cy|t).*unavailable/i);
+    assert.match(buildExecutor, /retryable.*replacement.*pass/is);
     assert.doesNotMatch(buildExecutor, />3 tasks, same module/);
     assert.match(codeReviewer, /execution review <change-dir>.*--verdict <pass\|fail>/s);
     assert.match(codeReviewer, /Critical\/Important.*fail.*receipt/is);

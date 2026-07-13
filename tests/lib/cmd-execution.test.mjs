@@ -41,6 +41,14 @@ function writeChangeDirectory(directory, workflow = 'full', revision = null) {
   ].filter(line => line !== null).join('\n'));
 }
 
+function writeReviewReport(name, content = 'Review completed without blocking findings.\n') {
+  const reportsDir = join(changeDir, 'reports');
+  mkdirSync(reportsDir, { recursive: true });
+  const reportPath = join(reportsDir, name);
+  writeFileSync(reportPath, content);
+  return reportPath;
+}
+
 beforeEach(() => {
   changeDir = mkdtempSync(join(tmpdir(), 'ssf-execution-cmd-'));
   writeChangeDirectory(changeDir);
@@ -104,6 +112,7 @@ describe('ssf execution', () => {
       tasks: ['1.1', '1.2'],
       depends_on: [],
       eligible: true,
+      retryable: false,
       receipt: null,
       blockers: [],
     }]);
@@ -159,8 +168,9 @@ describe('ssf execution', () => {
     const initial = runSsf(['execution', 'plan', changeDir, '--mode', 'batch-inline', '--override',
       '--reason', 'operator requested a batch', '--wave', 'wave-1:serial:1.1']);
     assert.equal(initial.exitCode, 0, initial.stderr);
+    const reportPath = writeReviewReport('wave-1.md');
     const reviewed = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
-      '--base', 'abc1234', '--head', 'def5678', '--report', 'reports/wave-1.md', '--verdict', 'pass']);
+      '--base', 'abc1234', '--head', 'def5678', '--report', reportPath, '--verdict', 'pass']);
     assert.equal(reviewed.exitCode, 0, reviewed.stderr);
 
     const revised = runSsf(['execution', 'revise', changeDir, '--mode', 'sdd',
@@ -172,6 +182,37 @@ describe('ssf execution', () => {
     assert.equal(shown.json.current, true);
     assert.equal(shown.json.waves[0].receipt, null);
     assert.equal(shown.json.waves[0].eligible, true);
+  });
+
+  it('makes a failed current wave retryable while blocking dependents until its replacement pass receipt', () => {
+    const planned = runSsf(['execution', 'plan', changeDir, '--mode', 'sdd',
+      '--reason', 'repair reviews before dependent work',
+      '--wave', 'wave-1:serial:1.1',
+      '--wave', 'wave-2:serial:1.2:wave-1']);
+    assert.equal(planned.exitCode, 0, planned.stderr);
+
+    const failed = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
+      '--base', 'base-fail', '--head', 'head-fail', '--report', writeReviewReport('wave-1-fail.md'), '--verdict', 'fail']);
+    assert.equal(failed.exitCode, 0, failed.stderr);
+
+    let shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.waves[0].receipt.status, 'fail');
+    assert.equal(shown.json.waves[0].retryable, true);
+    assert.equal(shown.json.waves[0].eligible, true);
+    assert.equal(shown.json.waves[1].eligible, false);
+    assert.deepEqual(shown.json.waves[1].blockers, ['wave-1']);
+
+    const replacement = runSsf(['execution', 'review', changeDir, '--wave', 'wave-1',
+      '--base', 'base-pass', '--head', 'head-pass', '--report', writeReviewReport('wave-1-pass.md'), '--verdict', 'pass']);
+    assert.equal(replacement.exitCode, 0, replacement.stderr);
+
+    shown = runSsf(['execution', 'show', changeDir, '--json']);
+    assert.equal(shown.exitCode, 0, shown.stderr);
+    assert.equal(shown.json.waves[0].receipt.status, 'pass');
+    assert.equal(shown.json.waves[0].retryable, false);
+    assert.equal(shown.json.waves[0].eligible, false);
+    assert.equal(shown.json.waves[1].eligible, true);
   });
 
   it('keeps the Task 1 state revision aligned through plan, show, revise, and show', () => {

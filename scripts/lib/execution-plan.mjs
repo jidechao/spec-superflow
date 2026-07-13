@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { computeArtifactsHash, computeContractHash } from './hash.mjs';
 import { getOverlayPaths } from './sdd-overlay.mjs';
@@ -102,7 +102,8 @@ export function recordReview(changeDir, waveId, receipt) {
   if (!REVIEW_STATUSES.has(receipt?.status)) {
     throw new Error("Review receipt status must be 'pass' or 'fail'");
   }
-  for (const field of ['base', 'head', 'report']) requireText(receipt?.[field], `receipt.${field}`);
+  for (const field of ['base', 'head']) requireText(receipt?.[field], `receipt.${field}`);
+  validateReviewReportEvidence(receipt?.report);
 
   const savedReceipt = {
     status: receipt.status,
@@ -137,24 +138,46 @@ export function readCurrentReview(changeDir, waveId, plan = readPlan(changeDir))
 
 /**
  * Machine-readable execution status used by `ssf execution show`. A wave is
- * eligible only when it has no current receipt and all declared dependencies
- * have a current passing receipt.
+ * eligible when it has no current receipt, or its current receipt failed and
+ * is therefore retryable, and all declared dependencies have passing receipts.
  */
 export function describeWaves(changeDir, plan = readPlan(changeDir)) {
   if (!plan || !Array.isArray(plan.waves)) return [];
   return plan.waves.map(wave => {
     const receipt = readCurrentReview(changeDir, wave.id, plan);
     const blockers = blockedDependencies(changeDir, plan, wave);
+    const retryable = receipt?.status === 'fail';
     return {
       id: wave.id,
       strategy: wave.strategy,
       tasks: wave.tasks,
       depends_on: wave.depends_on,
-      eligible: receipt === null && blockers.length === 0,
+      eligible: (receipt === null || retryable) && blockers.length === 0,
+      retryable,
       receipt,
       blockers,
     };
   });
+}
+
+function validateReviewReportEvidence(report) {
+  requireText(report, 'receipt.report');
+  if (/[\p{Cc}\p{Zl}\p{Zp}]/u.test(report)) {
+    throw new Error('Review report evidence path is unsafe');
+  }
+
+  let metadata;
+  try {
+    metadata = lstatSync(report);
+  } catch (error) {
+    throw new Error(`Review report evidence cannot be read: ${error.message}`);
+  }
+  if (metadata.isSymbolicLink() || !metadata.isFile()) {
+    throw new Error('Review report evidence must be a regular file');
+  }
+  if (metadata.size === 0) {
+    throw new Error('Review report evidence must be non-empty');
+  }
 }
 
 function blockedDependencies(changeDir, plan, wave) {

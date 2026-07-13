@@ -291,6 +291,14 @@ describe('guard: execution control records', () => {
     runNodeScript(CLI_PATH, ['state', 'set', dir, 'spec_merged', 'true']);
   }
 
+  function writeReviewReport(name, content = 'Review completed without blocking findings.\n') {
+    const reportsDir = join(dir, 'reports');
+    mkdirSync(reportsDir, { recursive: true });
+    const reportPath = join(reportsDir, name);
+    writeFileSync(reportPath, content);
+    return reportPath;
+  }
+
   it('rejects arbitrary DP-4 text when no current execution plan exists', () => {
     prepareFreshFullState();
     setStateField('dp_4_result', 'anything');
@@ -442,15 +450,23 @@ describe('guard: execution control records', () => {
     assert.match(reviewCheck.failures.join('\n'), /wave-1|receipt/i);
 
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-1',
-      '--base', 'base-1', '--head', 'head-1', '--report', 'reports/wave-1.md', '--verdict', 'pass']);
+      '--base', 'base-1', '--head', 'head-1', '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-2',
-      '--base', 'base-2', '--head', 'head-2', '--report', 'reports/wave-2.md', '--verdict', 'fail']);
+      '--base', 'base-2', '--head', 'head-2', '--report', writeReviewReport('wave-2.md'), '--verdict', 'fail']);
 
     result = run('executing', 'closing');
     reviewCheck = result.output.checks.find(check => check.dimension === 'execution-reviews-passed');
     assert.equal(result.exitCode, 1);
     assert.equal(reviewCheck.pass, false);
     assert.match(reviewCheck.failures.join('\n'), /wave-2.*fail/i);
+
+    runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-2',
+      '--base', 'base-2-repair', '--head', 'head-2-repair', '--report', writeReviewReport('wave-2-repair.md'), '--verdict', 'pass']);
+
+    result = run('executing', 'closing');
+    reviewCheck = result.output.checks.find(check => check.dimension === 'execution-reviews-passed');
+    assert.equal(result.exitCode, 0, JSON.stringify(result.output));
+    assert.equal(reviewCheck.pass, true);
   });
 
   it('allows closing with passing receipts when existing checks also pass', () => {
@@ -458,9 +474,9 @@ describe('guard: execution control records', () => {
     createCurrentPlan();
     recordPassingClosingPrerequisites();
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-1',
-      '--base', 'base-1', '--head', 'head-1', '--report', 'reports/wave-1.md', '--verdict', 'pass']);
+      '--base', 'base-1', '--head', 'head-1', '--report', writeReviewReport('wave-1.md'), '--verdict', 'pass']);
     runNodeScript(CLI_PATH, ['execution', 'review', dir, '--wave', 'wave-2',
-      '--base', 'base-2', '--head', 'head-2', '--report', 'reports/wave-2.md', '--verdict', 'pass']);
+      '--base', 'base-2', '--head', 'head-2', '--report', writeReviewReport('wave-2.md'), '--verdict', 'pass']);
 
     const result = run('executing', 'closing');
 

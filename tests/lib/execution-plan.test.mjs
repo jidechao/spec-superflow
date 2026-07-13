@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -20,6 +20,14 @@ beforeEach(() => {
 afterEach(() => {
   rmSync(changeDir, { recursive: true, force: true });
 });
+
+function writeReviewReport(name, content = 'Review completed without blocking findings.\n') {
+  const reportsDir = join(changeDir, 'reports');
+  mkdirSync(reportsDir, { recursive: true });
+  const reportPath = join(reportsDir, name);
+  writeFileSync(reportPath, content);
+  return reportPath;
+}
 
 describe('execution plan data contract', () => {
   it('creates a current SDD plan with an auditable parallel wave', () => {
@@ -198,8 +206,9 @@ describe('execution plan data contract', () => {
     });
     writePlan(changeDir, plan);
 
+    const reportPath = writeReviewReport('wave-1.md');
     const receipt = recordReview(changeDir, 'wave-1', {
-      status: 'pass', base: 'abc1234', head: 'def5678', report: 'No blocking findings.',
+      status: 'pass', base: 'abc1234', head: 'def5678', report: reportPath,
     });
 
     assert.equal(receipt.status, 'pass');
@@ -213,7 +222,7 @@ describe('execution plan data contract', () => {
     );
     assert.throws(
       () => recordReview(changeDir, 'unknown-wave', {
-        status: 'pass', base: 'abc1234', head: 'def5678', report: 'No blocking findings.',
+        status: 'pass', base: 'abc1234', head: 'def5678', report: reportPath,
       }),
       /unknown wave/,
     );
@@ -229,11 +238,13 @@ describe('execution plan data contract', () => {
     });
     writePlan(changeDir, plan);
 
+    const percentReport = writeReviewReport('percent.md', 'Percent wave passed.\n');
+    const underscoreReport = writeReviewReport('underscore.md', 'Underscore wave failed.\n');
     recordReview(changeDir, 'a%', {
-      status: 'pass', base: 'base-percent', head: 'head-percent', report: 'Percent wave passed.',
+      status: 'pass', base: 'base-percent', head: 'head-percent', report: percentReport,
     });
     recordReview(changeDir, 'a_25', {
-      status: 'fail', base: 'base-underscore', head: 'head-underscore', report: 'Underscore wave failed.',
+      status: 'fail', base: 'base-underscore', head: 'head-underscore', report: underscoreReport,
     });
 
     const reviewsDir = join(changeDir, '.superpowers', 'sdd', 'reviews');
@@ -241,8 +252,54 @@ describe('execution plan data contract', () => {
       .sort()
       .map(fileName => JSON.parse(readFileSync(join(reviewsDir, fileName), 'utf8')));
     assert.equal(receipts.length, 2);
-    assert.ok(receipts.some(receipt => receipt.report === 'Percent wave passed.'));
-    assert.ok(receipts.some(receipt => receipt.report === 'Underscore wave failed.'));
+    assert.ok(receipts.some(receipt => receipt.report === percentReport));
+    assert.ok(receipts.some(receipt => receipt.report === underscoreReport));
+  });
+
+  it('rejects missing, non-file, empty, and symbolic-link report evidence before writing a receipt', () => {
+    const plan = createPlan(changeDir, {
+      mode: 'sdd', source: 'default', rationale: 'review evidence must be durable',
+      waves: [{ id: 'wave-1', strategy: 'serial', tasks: ['1.1'], depends_on: [] }],
+    });
+    writePlan(changeDir, plan);
+
+    const reportsDir = join(changeDir, 'reports');
+    mkdirSync(reportsDir, { recursive: true });
+    const emptyReport = join(reportsDir, 'empty.md');
+    const directoryReport = join(reportsDir, 'directory');
+    const validReport = writeReviewReport('valid.md');
+    const symlinkReport = join(reportsDir, 'symlink.md');
+    writeFileSync(emptyReport, '');
+    mkdirSync(directoryReport);
+    symlinkSync(validReport, symlinkReport);
+
+    for (const report of [
+      join(reportsDir, 'missing.md'),
+      directoryReport,
+      emptyReport,
+      symlinkReport,
+    ]) {
+      assert.throws(() => recordReview(changeDir, 'wave-1', {
+        status: 'pass', base: 'abc1234', head: 'def5678', report,
+      }), /report evidence|review report/i);
+      assert.equal(lstatSync(join(reportsDir, 'valid.md')).isFile(), true);
+      assert.equal(existsSync(join(changeDir, '.superpowers', 'sdd', 'reviews')), false);
+    }
+  });
+
+  it('preserves a legitimate review report path in the receipt', () => {
+    const plan = createPlan(changeDir, {
+      mode: 'sdd', source: 'default', rationale: 'retain report path for audit',
+      waves: [{ id: 'wave-1', strategy: 'serial', tasks: ['1.1'], depends_on: [] }],
+    });
+    writePlan(changeDir, plan);
+    const reportPath = writeReviewReport('audit.md');
+
+    const receipt = recordReview(changeDir, 'wave-1', {
+      status: 'pass', base: 'abc1234', head: 'def5678', report: reportPath,
+    });
+
+    assert.equal(receipt.report, reportPath);
   });
 
   it('returns validation failures instead of throwing for malformed plans', () => {
