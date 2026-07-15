@@ -21,7 +21,7 @@ const targetRoot = process.cwd();
 const GITHUB_REPO = 'MageByte-Zero/spec-superflow';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
-// Directories needed at runtime by skills (referenced via ${CLAUDE_PLUGIN_ROOT})
+// Directories needed by local installer-rewritten runtime commands.
 const RUNTIME_DIRS = ['scripts', 'docs', 'templates', 'dist', 'hooks'];
 
 function ensureDir(dir) {

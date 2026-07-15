@@ -6,7 +6,7 @@ import { PLATFORM_RUNTIME_INVENTORY } from './platform-runtime-inventory.mjs';
 
 const RUNTIME_SKILLS = new Set([
   'workflow-start', 'need-explorer', 'spec-writer', 'contract-builder',
-  'build-executor', 'bug-investigator', 'release-archivist', 'spec-merger',
+  'build-executor', 'code-reviewer', 'bug-investigator', 'release-archivist', 'spec-merger',
 ]);
 
 function readJsonIfExists(filePath) {

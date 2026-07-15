@@ -85,7 +85,7 @@ for (const check of TEXT_CHECKS) {
 
 const RUNTIME_SKILLS = [
   'workflow-start', 'need-explorer', 'spec-writer', 'contract-builder',
-  'build-executor', 'bug-investigator', 'release-archivist', 'spec-merger',
+  'build-executor', 'code-reviewer', 'bug-investigator', 'release-archivist', 'spec-merger',
 ];
 for (const skill of RUNTIME_SKILLS) {
   const file = `skills/${skill}/SKILL.md`;

@@ -127,6 +127,7 @@ npm install -g spec-superflow
 ### Version
 
 - Current: `v0.9.1`
+- v0.9.1 highlights: DP-4 execution-mode recommendations, a portable runtime across 17 platforms, and a raw-package smoke with no plugin-root variable.
 - Self-contained — no OpenSpec or Superpowers runtime required
 - Upstream: [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec), [obra/superpowers](https://github.com/obra/superpowers)
 - Changelog: [CHANGELOG.md](../CHANGELOG.md)

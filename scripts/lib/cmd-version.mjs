@@ -31,6 +31,7 @@ const TEXT_FILES = [
   { file: 'skills/spec-writer/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
   { file: 'skills/contract-builder/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
   { file: 'skills/build-executor/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
+  { file: 'skills/code-reviewer/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
   { file: 'skills/bug-investigator/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
   { file: 'skills/release-archivist/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },
   { file: 'skills/spec-merger/SKILL.md', pattern: /(npx --yes --package spec-superflow@)0\.\d+\.\d+( ssf)/g, replacement: '$10.%MINOR%.%PATCH%$2' },

@@ -394,4 +394,20 @@ describe('cmd-doctor: checkRuntimeDistribution()', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('checks code-reviewer as a portable runtime skill', () => {
+    const root = mkdtempSync(join(tmpdir(), 'ssf-doctor-code-reviewer-'));
+    try {
+      mkdirSync(join(root, 'skills', 'code-reviewer'), { recursive: true });
+      writeFileSync(join(root, 'package.json'), JSON.stringify({ version: '1.2.3' }));
+      writeFileSync(join(root, 'skills', 'code-reviewer', 'SKILL.md'),
+        'node "${CLAUDE_PLUGIN_ROOT}/scripts/spec-superflow.mjs" execution review demo');
+
+      const result = checkRuntimeDistribution(root);
+      assert.equal(result.pass, false);
+      assert.match(result.message, /code-reviewer: plugin-root placeholder remains/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

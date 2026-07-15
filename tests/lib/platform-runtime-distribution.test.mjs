@@ -19,6 +19,7 @@ const RUNTIME_SKILLS = [
   'spec-writer',
   'contract-builder',
   'build-executor',
+  'code-reviewer',
   'bug-investigator',
   'release-archivist',
   'spec-merger',
@@ -46,17 +47,9 @@ describe('canonical skill runtime protocol', () => {
     assert.match(content, /runtime asset read skills\/build-executor\/task-reviewer-prompt\.md/);
   });
 
-  it('uses the portable CLI for code-review receipts without requiring a plugin-root variable', () => {
-    const content = skill('code-reviewer');
-
-    assert.doesNotMatch(content, /\$\{CLAUDE_PLUGIN_ROOT\}|\$\{PLUGIN_ROOT\}/);
-    assert.match(content, new RegExp(PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
-  });
-
   it('does not leave bare ssf commands in runtime instructions or reviewer templates', () => {
     const files = [
       ...RUNTIME_SKILLS.map(name => join(ROOT, 'skills', name, 'SKILL.md')),
-      join(ROOT, 'skills', 'code-reviewer', 'SKILL.md'),
       join(ROOT, 'skills', 'build-executor', 'implementer-prompt.md'),
       join(ROOT, 'skills', 'build-executor', 'task-reviewer-prompt.md'),
       join(ROOT, 'skills', 'code-reviewer', 'code-reviewer-prompt.md'),
@@ -116,6 +109,17 @@ describe('platform runtime inventory', () => {
     assert.ok(idsWithMode('codex-cli', 'canonical-fallback'));
     assert.ok(idsWithMode('codex-app', 'canonical-fallback'));
     assert.ok(idsWithMode('opencode', 'canonical-fallback'));
+  });
+});
+
+describe('runtime version synchronization', () => {
+  it('includes code-reviewer when a release version is dry-run', () => {
+    const output = execFileSync(process.execPath, [CLI, 'version', '0.9.2', '--dry-run'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+
+    assert.match(output, /skills\/code-reviewer\/SKILL\.md: version string updated/);
   });
 });
 

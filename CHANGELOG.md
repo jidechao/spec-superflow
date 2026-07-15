@@ -6,16 +6,19 @@ The format loosely follows Keep a Changelog.
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-07-15
+
 ### Changed
 
 - **#52 — isolate optional name**: `ssf isolate <change-dir>` no longer forwards an absent optional name as the literal string `undefined`; explicit names and `--force` retain their existing behavior.
-- **#43 — portable skill runtime**: eight runtime-dependent canonical skills no longer require `${CLAUDE_PLUGIN_ROOT}`. Raw marketplace, cache, copy, and symlink loading use a semver-pinned package CLI; local installers rewrite that prefix to their bundled runtime tree.
-- **Cross-platform runtime diagnostics**: `ssf doctor` now detects stale root placeholders and missing runtime trees, while version sync and CI consistency checks include all eight canonical runtime skill prefixes.
+- **#43 — portable skill runtime**: all nine canonical skills no longer require `${CLAUDE_PLUGIN_ROOT}`. Raw marketplace, cache, copy, and symlink loading use a semver-pinned package CLI; local installers rewrite that prefix to their bundled runtime tree.
+- **Cross-platform runtime diagnostics**: `ssf doctor` now detects stale root placeholders and missing runtime trees, while version sync and CI consistency checks include all nine canonical skill prefixes.
 - **#45 — Execution-mode recommendation**: DP-4 now runs `ssf execution recommend` to list Inline, Batch Inline, and SDD from task and wave evidence, with a recommendation. Every persisted plan at `<change>/.superpowers/sdd/execution-plan.json` requires explicit `--confirm`; a non-recommended selection records `--acknowledge-recommendation` instead of treating Inline as an override. Named waves, dependencies, and review receipts remain mandatory.
 
 ### Added
 
 - Runtime distribution inventory for all 17 documented platforms plus the ZCODE compatibility installer path.
+- `npm run test:raw-mode` packages the current source and proves the canonical runtime works without plugin-root variables or a global `ssf` command.
 
 ## [0.9.0] - 2026-07-11
 

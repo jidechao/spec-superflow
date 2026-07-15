@@ -5,9 +5,9 @@
 // PlatformConfig from ./platforms.mjs. For each platform it:
 //   1. Resolves the plugin source (latest GitHub release or --local <path>).
 //   2. Copies RUNTIME_DIRS (scripts/docs/templates/dist/hooks) to
-//      <skillsDir>/spec-superflow/ so ${CLAUDE_PLUGIN_ROOT}/... resolves.
-//   3. Copies skills/ to <skillsDir>/skills/ with ${CLAUDE_PLUGIN_ROOT}
-//      rewritten to the absolute plugin root.
+//      <skillsDir>/spec-superflow/ so local runtime commands resolve.
+//   3. Copies skills/ to <skillsDir>/skills/ with portable package commands
+//      rewritten to the bundled runtime.
 //   4. Writes a phase-guard rule file to the platform's rules directory
 //      (when the platform has one) so the workflow entry rule is auto-included.
 //
@@ -28,7 +28,7 @@ const defaultPluginRoot = resolve(__dirname, '..', '..'); // repo root when run 
 const GITHUB_REPO = 'MageByte-Zero/spec-superflow';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 
-// Directories needed at runtime by skills (referenced via ${CLAUDE_PLUGIN_ROOT}).
+// Directories needed by local installer-rewritten runtime commands.
 const RUNTIME_DIRS = ['scripts', 'docs', 'templates', 'dist', 'hooks'];
 
 function ensureDir(dir) {
@@ -76,8 +76,8 @@ async function copyDir(src, dst) {
 }
 
 /**
- * Copy skills to target, replacing ${CLAUDE_PLUGIN_ROOT} with the actual
- * plugin root path so skill instructions resolve in the target platform.
+ * Copy skills to target, retaining legacy root replacement and rewriting the
+ * portable package command to the target's bundled runtime.
  */
 async function copySkillsWithRoot(sourceSkills, targetSkills, pluginRootAbs) {
   // Clean old skill directories before copying.
@@ -229,7 +229,7 @@ export async function installPlatform(platformId, opts = {}) {
       }
     }
 
-    // 2. Copy skills to <skillsDir>/skills/ with CLAUDE_PLUGIN_ROOT replaced
+    // 2. Copy skills to <skillsDir>/skills/ with portable commands rewritten
     const count = await copySkillsWithRoot(sourceSkills, targetSkills, pluginRootAbs);
     console.log(`   skills/ → ${targetSkills} (${count} skills, paths rewritten)`);
 
