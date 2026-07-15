@@ -22,7 +22,8 @@ export async function run(args) {
   const extra = values.force ? ['--force'] : [];
   // Literal command ('node') + literal argument array, no shell — same safe form
   // as cmd-install-*.mjs. execFileSync throws on non-zero exit; propagate its status.
-  const nodeArgs = [ENSURE, changeDir, changeName];
+  const nodeArgs = [ENSURE, changeDir];
+  if (changeName !== undefined) nodeArgs.push(changeName);
   for (const a of extra) nodeArgs.push(a);
   try {
     execFileSync('node', nodeArgs, {
