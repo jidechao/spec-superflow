@@ -18,6 +18,7 @@ const COMMANDS = {
   handoff:        () => import('./lib/cmd-handoff.mjs'),
   isolate:        () => import('./lib/cmd-isolate.mjs'),
   execution:      () => import('./lib/cmd-execution.mjs'),
+  runtime:        () => import('./lib/cmd-runtime.mjs'),
   'install-cursor': () => import('./lib/cmd-install-cursor.mjs'),
   'install-workbuddy': () => import('./lib/cmd-install-workbuddy.mjs'),
   'install-cline':    () => import('./lib/cmd-install-cline.mjs'),
@@ -68,6 +69,12 @@ Commands:
                         Upgrade inline/batch to SDD, or replan existing SDD waves, as a new revision
   execution review <change-dir> --wave <id> --base <sha> --head <sha> --report <path> --verdict pass|fail
                         Record one review receipt for a planned wave
+  runtime check-update  Run a portable update check for canonical skills
+  runtime infer <dir>   Infer workflow mode without a plugin-root path
+  runtime guard ...     Run a portable phase-transition guard
+  runtime config ...    Read effective configuration (writes are rejected)
+  runtime asset read <path>
+                        Read one allowlisted package asset for a skill
   install-cursor        Deploy skills/scripts/docs to .cursor/ (local Cursor setup)
   install-workbuddy     Deploy skills to WorkBuddy marketplace and enable them
   install-cline         Deploy to .cline/ + .clinerules/ (Cline)
