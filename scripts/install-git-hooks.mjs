@@ -6,12 +6,18 @@
 // Automatically run post-install so every contributor gets the guard.
 
 import { writeFileSync, existsSync, chmodSync, readFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
-const HOOKS_DIR = join(ROOT, '.git', 'hooks');
+// Ask Git for the common hooks directory so linked worktrees install correctly.
+// `git rev-parse --git-path hooks` may be relative in a normal checkout.
+const HOOKS_DIR = resolve(ROOT, execFileSync('git', ['rev-parse', '--git-path', 'hooks'], {
+  cwd: ROOT,
+  encoding: 'utf8',
+}).trim());
 const HOOK_PATH = join(HOOKS_DIR, 'pre-commit');
 
 const HOOK_SCRIPT = `#!/usr/bin/env bash
@@ -21,7 +27,7 @@ const HOOK_SCRIPT = `#!/usr/bin/env bash
 
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 echo "🔍 spec-superflow: checking version consistency..."
 
