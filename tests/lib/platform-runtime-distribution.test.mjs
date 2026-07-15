@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { PLATFORM_RUNTIME_INVENTORY, ZCODE_COMPATIBILITY_PATH } from '../../scripts/lib/platform-runtime-inventory.mjs';
 
 const ROOT = process.cwd();
 const VERSION = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')).version;
@@ -73,3 +74,33 @@ describe('local runtime deployment', () => {
     }
   });
 });
+
+describe('platform runtime inventory', () => {
+  it('lists every documented platform and the ZCODE compatibility path', () => {
+    const ids = new Set(PLATFORM_RUNTIME_INVENTORY.map(platform => platform.id));
+
+    assert.deepEqual(ids, new Set([
+      'claude-code', 'cursor', 'codex-cli', 'codex-app', 'copilot-cli', 'gemini-cli',
+      'opencode', 'workbuddy', 'trae', 'cline', 'kiro', 'windsurf', 'qwen',
+      'amazon-q', 'roocode', 'continue', 'pi',
+    ]));
+    assert.equal(ZCODE_COMPATIBILITY_PATH.id, 'zcode');
+  });
+
+  it('gives each documented distribution an explicit, testable runtime mode', () => {
+    const validModes = new Set(['native-root', 'installer-rewrite', 'canonical-fallback']);
+
+    for (const platform of PLATFORM_RUNTIME_INVENTORY) {
+      assert.ok(platform.modes.length > 0, `${platform.id} needs at least one distribution mode`);
+      for (const mode of platform.modes) assert.ok(validModes.has(mode), `${platform.id}: ${mode}`);
+    }
+    assert.deepEqual(ZCODE_COMPATIBILITY_PATH.modes, ['installer-rewrite']);
+    assert.ok(idsWithMode('codex-cli', 'canonical-fallback'));
+    assert.ok(idsWithMode('codex-app', 'canonical-fallback'));
+    assert.ok(idsWithMode('opencode', 'canonical-fallback'));
+  });
+});
+
+function idsWithMode(id, mode) {
+  return PLATFORM_RUNTIME_INVENTORY.find(platform => platform.id === id)?.modes.includes(mode);
+}
