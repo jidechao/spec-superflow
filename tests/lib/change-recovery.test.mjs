@@ -54,6 +54,12 @@ describe('change-recovery: resolveChangeTarget()', () => {
     finishHandoff(changeDir, id);
   }
 
+  function makeMalformedPlan(changeDir) {
+    const planDir = join(changeDir, '.superpowers', 'sdd');
+    mkdirSync(planDir, { recursive: true });
+    writeFileSync(join(planDir, 'execution-plan.json'), '{not valid JSON');
+  }
+
   it('selects the only active change and rejects ambiguous recovery', () => {
     makeChange('alpha', 'executing');
     assert.equal(resolveChangeTarget(undefined, root).name, 'alpha');
@@ -83,15 +89,62 @@ describe('change-recovery: resolveChangeTarget()', () => {
     const summary = createRecoverySummary(change);
 
     assert.equal(summary.checkpoint.status, 'stale');
-    assert.equal(summary.blockers[0].code, 'HANDOFF_REVIEW_REQUIRED');
+    assert.deepEqual(
+      summary.blockers.map(blocker => blocker.code),
+      ['HANDOFF_REVIEW_REQUIRED', 'EXECUTION_PLAN_REQUIRED'],
+    );
     assert.equal(
       summary.next_action.command,
       `ssf handoff resolve ${change} research-1 --decision <accept|reject|defer>`,
     );
   });
 
+  it('keeps malformed-plan failures after sorted result-ready handoff blockers', () => {
+    const change = makeExecutableChange('malformed-plan');
+    makeResultReadyHandoff(change, 'research-z');
+    makeResultReadyHandoff(change, 'research-a');
+    makeMalformedPlan(change);
+
+    const summary = createRecoverySummary(change);
+
+    assert.equal(summary.execution.current, false);
+    assert.match(summary.execution.failures[0], /Unable to read execution plan/);
+    assert.deepEqual(
+      summary.blockers.map(blocker => blocker.code),
+      ['HANDOFF_REVIEW_REQUIRED', 'HANDOFF_REVIEW_REQUIRED', 'EXECUTION_PLAN_STALE'],
+    );
+    assert.deepEqual(
+      summary.blockers.map(blocker => blocker.handoff),
+      ['research-a', 'research-z', undefined],
+    );
+    assert.equal(
+      summary.next_action.command,
+      `ssf handoff resolve ${change} research-a --decision <accept|reject|defer>`,
+    );
+  });
+
+  it('requires a current plan throughout execution states', () => {
+    for (const state of ['approved-for-build', 'executing', 'debugging']) {
+      const change = makeChange(`requires-plan-${state}`, state);
+      const summary = createRecoverySummary(change);
+
+      assert.equal(summary.execution.required, true);
+      assert.deepEqual(summary.blockers.map(blocker => blocker.code), ['EXECUTION_PLAN_REQUIRED']);
+      assert.equal(summary.next_action.skill, 'build-executor');
+    }
+  });
+
   it('returns no next skill for terminal changes', () => {
     const change = makeChange('done', 'closing');
+    const summary = createRecoverySummary(change);
+
+    assert.equal(summary.terminal, true);
+    assert.equal(summary.next_action.skill, 'none');
+    assert.deepEqual(summary.blockers, []);
+  });
+
+  it('returns no next skill for abandoned changes', () => {
+    const change = makeChange('abandoned', 'abandoned');
     const summary = createRecoverySummary(change);
 
     assert.equal(summary.terminal, true);

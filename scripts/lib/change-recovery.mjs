@@ -74,28 +74,40 @@ function partitionHandoffs(records) {
 
 function inspectExecution(changeDir, state) {
   const required = ['approved-for-build', 'executing', 'debugging'].includes(state);
-  const plan = readPlan(changeDir);
-  if (!plan) {
+  let plan = null;
+  try {
+    plan = readPlan(changeDir);
+    if (!plan) {
+      return {
+        required,
+        present: false,
+        current: false,
+        revision: null,
+        next_eligible_wave: null,
+        failures: ['execution plan is missing'],
+      };
+    }
+
+    const validation = validatePlan(changeDir, plan);
+    const waves = validation.valid ? describeWaves(changeDir, plan) : [];
     return {
       required,
-      present: false,
+      present: true,
+      current: validation.valid,
+      revision: plan.revision ?? null,
+      next_eligible_wave: waves.find(wave => wave.eligible)?.id ?? null,
+      failures: validation.failures,
+    };
+  } catch (error) {
+    return {
+      required,
+      present: true,
       current: false,
-      revision: null,
+      revision: plan?.revision ?? null,
       next_eligible_wave: null,
-      failures: ['execution plan is missing'],
+      failures: [error instanceof Error ? error.message : String(error)],
     };
   }
-
-  const validation = validatePlan(changeDir, plan);
-  const waves = validation.valid ? describeWaves(changeDir, plan) : [];
-  return {
-    required,
-    present: true,
-    current: validation.valid,
-    revision: plan.revision ?? null,
-    next_eligible_wave: waves.find(wave => wave.eligible)?.id ?? null,
-    failures: validation.failures,
-  };
 }
 
 function buildBlockers(changeDir, handoffs, execution) {
