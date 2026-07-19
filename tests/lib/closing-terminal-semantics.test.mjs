@@ -100,6 +100,18 @@ describe('closing terminal lifecycle', () => {
       /\| 8 \| `release-archivist` \| Pre-closing within executing \|/);
     assert.doesNotMatch(englishReadme,
       /\| 8 \| `release-archivist` \| Closing \|/);
+    assert.match(chineseReadme,
+      /\| 9 \| `spec-merger` \| 执行内收尾 \|/);
+    assert.doesNotMatch(chineseReadme,
+      /\| 9 \| `spec-merger` \| 同步 \|/);
+    assert.match(englishReadme,
+      /\| 9 \| `spec-merger` \| Pre-closing within executing \|/);
+    assert.doesNotMatch(englishReadme,
+      /\| 9 \| `spec-merger` \| Syncing \|/);
+    assert.match(chineseWorkflow,
+      /^\s*pre-closing（仍属于 executing 的收尾步骤，不是新增状态）$/m);
+    assert.match(englishWorkflow,
+      /^\s*pre-closing \(a wrap-up step within executing, not a ninth state\)$/m);
 
     for (const [name, workflow, archivist, merger, archive] of [
       ['Chinese README', chineseWorkflow, 'release-archivist 验证', 'spec-merger 同步', '归档确认'],
