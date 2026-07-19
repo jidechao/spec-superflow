@@ -194,7 +194,7 @@ ssf checkpoint list changes/my-change
 ssf handoff create changes/my-change --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
 ```
 
-`resume` 与 `switch` 都是只读恢复操作；`resume` 只会在恰好一个活跃 change 时自动选择目标。`switch` 只返回明确目标的恢复上下文，不修改 cwd、TUI 会话或任何隐藏指针；CodeBuddy/WorkBuddy adapter 或宿主 Agent 可用该上下文切换当前对话关注对象。`save` 仅手动写入既有 checkpoint 协议，绝不自动 commit、push 或 sync。`/ssf:resume`、`/ssf:switch`、`/ssf:save` 是 CodeBuddy/WorkBuddy 使用的 Markdown command adapter：它们分发到同一 CLI guard，不为其他平台承诺完全相同的 slash 名称。
+`resume` 与 `switch` 都是只读恢复操作；`resume` 只会在恰好一个活跃 change 时自动选择目标。`switch` 只返回明确目标的恢复上下文，不修改 cwd、TUI 会话或任何隐藏指针；CLI 本身不切换当前对话关注对象，CodeBuddy/WorkBuddy adapter 或宿主 Agent 可用该上下文完成该动作。`save` 仅手动写入既有 checkpoint 协议，绝不自动 commit、push 或 sync。`/ssf:resume`、`/ssf:switch`、`/ssf:save` 是 CodeBuddy/WorkBuddy 使用的 Markdown command adapter：它们分发到同一 CLI guard，不为其他平台承诺完全相同的 slash 名称。
 
 Prototype 只在用户明确确认后创建；后端、CLI、配置和内部重构不会自动进入 prototype 流程。handoff 结果不会自动修改 `design.md` 或 `tasks.md`。
 

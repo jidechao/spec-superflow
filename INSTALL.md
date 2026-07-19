@@ -791,7 +791,7 @@ ssf handoff finish changes/my-change <handoff-id>
 ssf handoff resolve changes/my-change <handoff-id> --decision accept
 ```
 
-`resume` 与 `switch` 是只读恢复操作；`resume` 只会在恰好一个活跃 change 时自动选择。`switch` 只返回明确目标的恢复上下文，不修改 cwd、TUI 会话或任何隐藏指针；CodeBuddy/WorkBuddy adapter 或宿主 Agent 可用该上下文切换当前对话关注对象。`save` 只手动写入兼容 checkpoint，不自动 commit、push 或 sync。`/ssf:resume`、`/ssf:switch`、`/ssf:save` 是 CodeBuddy/WorkBuddy Markdown command adapter，会分发至相同的 CLI guard。
+`resume` 与 `switch` 是只读恢复操作；`resume` 只会在恰好一个活跃 change 时自动选择。`switch` 只返回明确目标的恢复上下文，不修改 cwd、TUI 会话或任何隐藏指针；CLI 本身不切换当前对话关注对象，CodeBuddy/WorkBuddy adapter 或宿主 Agent 可用该上下文完成该动作。`save` 只手动复用既有 checkpoint 协议，不自动 commit、push 或 sync。`/ssf:resume`、`/ssf:switch`、`/ssf:save` 是 CodeBuddy/WorkBuddy Markdown command adapter，会分发至相同的 CLI guard，不为其他平台承诺完全相同的 slash 名称。
 
 Checkpoint 是任务级恢复上下文。`result-ready` handoff 在继续受影响的工作前必须显式审阅并 resolve。Prototype 只在用户明确确认后创建；后端、CLI、配置和内部重构不会自动进入 prototype 流程。handoff 结果不会自动修改 `design.md` 或 `tasks.md`。
 

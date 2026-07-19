@@ -119,7 +119,7 @@ npm install -g spec-superflow
 | `ssf checkpoint show <dir> <id>` | Show one recovery checkpoint |
 | `ssf resume [change]` | Read-only recovery summary; auto-selects the only active change |
 | `ssf switch <change>` | Read-only recovery context for an explicit change; an adapter may use it to focus the current AI conversation |
-| `ssf save <change> --task <id> --next <text>` | Manually writes a compatible checkpoint; never commits, pushes, or syncs automatically |
+| `ssf save <change> --task <id> --next <text>` | Manually reuses the existing checkpoint protocol; never commits, pushes, or syncs automatically |
 | `ssf handoff create <dir> --type <type> ...` | Create a prototype/research/experiment handoff |
 | `ssf handoff list <dir>` | List handoff lifecycle status |
 | `ssf handoff finish <dir> <id>` | Validate a handoff result |
@@ -156,7 +156,7 @@ ssf checkpoint list changes/my-change
 ssf handoff create changes/my-change --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
 ```
 
-`resume` and `switch` are read-only recovery operations; `resume` auto-selects a target only when exactly one active change exists. `switch` only returns the explicit target's recovery context and never changes cwd, a TUI session, or a hidden pointer; a CodeBuddy/WorkBuddy adapter or host agent may use that context to focus the conversation. `save` only manually writes the established checkpoint protocol; it never commits, pushes, or syncs automatically. `/ssf:resume`, `/ssf:switch`, and `/ssf:save` are Markdown command adapters for CodeBuddy/WorkBuddy that dispatch to the same CLI guards; other platforms are not promised identical slash names.
+`resume` and `switch` are read-only recovery operations; `resume` auto-selects a target only when exactly one active change exists. `switch` only returns the explicit target's recovery context and never changes cwd, a TUI session, or a hidden pointer; the CLI itself does not mutate conversation focus, while a CodeBuddy/WorkBuddy adapter or host agent may use that context to focus the conversation. `save` only manually reuses the existing checkpoint protocol; it never commits, pushes, or syncs automatically. `/ssf:resume`, `/ssf:switch`, and `/ssf:save` are Markdown command adapters for CodeBuddy/WorkBuddy that dispatch to the same CLI guards; other platforms are not promised identical slash names.
 
 Prototype work starts only after explicit user confirmation. Backend, CLI,
 configuration, and internal-refactor work does not enter the prototype route
