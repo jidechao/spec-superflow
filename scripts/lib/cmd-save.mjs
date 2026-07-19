@@ -9,13 +9,21 @@ const USAGE = 'Usage: ssf save <change-dir> --task <id> --next <text>';
 
 export async function run(args) {
   let values = { json: args.includes('--json') };
+
+  let parsed;
   try {
-    const parsed = parseArgs({
+    parsed = parseArgs({
       args,
       allowPositionals: true,
       options: CHECKPOINT_SAVE_OPTIONS,
     });
-    values = parsed.values;
+  } catch {
+    printError(values.json, new CheckpointUsageError(USAGE));
+    return;
+  }
+
+  values = parsed.values;
+  try {
 
     if (parsed.positionals.length !== 1) {
       throw new CheckpointUsageError(USAGE);

@@ -1,6 +1,6 @@
 // scripts/lib/cmd-checkpoint.mjs - ssf checkpoint recovery records
 import { parseArgs } from 'node:util';
-import { computeTaskHash, getCheckpoint, listCheckpoints, saveCheckpoint } from './sdd-overlay.mjs';
+import { getCheckpoint, listCheckpoints, saveCheckpoint } from './sdd-overlay.mjs';
 
 const USAGE = 'Usage: ssf checkpoint <save|list|show> <change-dir> [options]';
 
@@ -18,9 +18,6 @@ export function saveFromValues(changeDir, values) {
     throw new CheckpointUsageError('save requires --task <id> and --next <text>');
   }
 
-  // Validate before entering the storage writer so an unknown task cannot
-  // create an overlay directory as a side effect.
-  computeTaskHash(changeDir, values.task);
   return saveCheckpoint(changeDir, {
     taskId: values.task,
     next: values.next,

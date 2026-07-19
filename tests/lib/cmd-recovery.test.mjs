@@ -198,6 +198,33 @@ describe('ssf save', () => {
     assert.equal(existsSync(join(change, '.superpowers')), false);
   });
 
+  it('maps unknown save options to a text usage error without writes', () => {
+    const change = makeTasksChange('alpha', '- [ ] 1.1 Existing task\n');
+    const result = runSsf(['save', change, '--task', '1.1', '--next', 'Continue', '--unexpected']);
+
+    assert.equal(result.status, 2);
+    assert.equal(result.stdout, '');
+    assert.equal(result.stderr, 'Usage: ssf save <change-dir> --task <id> --next <text>\n');
+    assert.equal(existsSync(join(change, '.superpowers')), false);
+  });
+
+  it('maps missing save option values to one JSON usage error without writes', () => {
+    const change = makeTasksChange('alpha', '- [ ] 1.1 Existing task\n');
+    const result = runSsf(['save', change, '--task', '--next', 'Continue', '--json']);
+
+    assert.equal(result.status, 2);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      ok: false,
+      command: 'save',
+      error: {
+        code: 'INVALID_ARGUMENTS',
+        message: 'Usage: ssf save <change-dir> --task <id> --next <text>',
+        details: {},
+      },
+    });
+    assert.equal(existsSync(join(change, '.superpowers')), false);
+  });
+
   it('rejects unknown tasks as one JSON domain error without creating a checkpoint', () => {
     const change = makeTasksChange('alpha', '- [ ] 1.1 Existing task\n');
     const result = runSsf(['save', change, '--task', '9.9', '--next', 'Continue', '--json']);

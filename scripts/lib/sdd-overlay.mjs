@@ -36,11 +36,12 @@ export function computeTaskHash(changeDir, taskId) {
 export function saveCheckpoint(changeDir, input) {
   requireText(input?.taskId, 'taskId');
   requireText(input?.next, 'next');
+  const taskHash = computeTaskHash(changeDir, input.taskId);
   const paths = getOverlayPaths(changeDir);
   mkdirSync(paths.checkpoints, { recursive: true });
   const record = {
     task_id: input.taskId,
-    task_hash: computeTaskHash(changeDir, input.taskId),
+    task_hash: taskHash,
     next: input.next,
     completed: input.completed ?? 'Not recorded',
     evidence: input.evidence ?? 'Not recorded',
