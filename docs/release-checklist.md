@@ -48,17 +48,26 @@ For each example in `docs/examples/`:
 - `node scripts/check-version-consistency.mjs` — exits 0
 - `node scripts/spec-superflow.mjs --help` — all subcommands listed
 - Verify `commands/ssf/resume.md`, `commands/ssf/switch.md`, and `commands/ssf/save.md` are complete canonical Markdown command assets.
+- `node --test tests/lib/recovery-command-assets.test.mjs` — scans every command asset for checkout-specific absolute paths; any failure is a release blocker.
 - `node scripts/spec-superflow.mjs install-workbuddy --dry-run` — finds all 9 skills, all 3 recovery commands, and target paths.
 - Run `install-workbuddy` against a temporary home and verify it installs `ssf:resume`, `ssf:switch`, and `ssf:save` as complete command assets.
 
   ```bash
   # Local release-candidate smoke: never writes ~/.workbuddy or downloads latest.
   SSF_WORKBUDDY_SMOKE_HOME="$(mktemp -d)"
+  if grep -R -F "$PWD/" commands/ssf; then
+    echo "Canonical command assets contain the local checkout path" >&2
+    exit 1
+  fi
   node scripts/spec-superflow.mjs install-workbuddy --local "$PWD" --home "$SSF_WORKBUDDY_SMOKE_HOME"
   SSF_WORKBUDDY_PLUGIN="$SSF_WORKBUDDY_SMOKE_HOME/.workbuddy/plugins/marketplaces/cb_teams_marketplace/plugins/spec-superflow"
   test -f "$SSF_WORKBUDDY_PLUGIN/commands/ssf/resume.md"
   test -f "$SSF_WORKBUDDY_PLUGIN/commands/ssf/switch.md"
   test -f "$SSF_WORKBUDDY_PLUGIN/commands/ssf/save.md"
+  if grep -R -F "$PWD/" "$SSF_WORKBUDDY_PLUGIN/commands/ssf"; then
+    echo "Installed command assets contain the local checkout path" >&2
+    exit 1
+  fi
   test "$(find "$SSF_WORKBUDDY_PLUGIN/skills" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" = 9
   test -d "$SSF_WORKBUDDY_PLUGIN/scripts"
   test -d "$SSF_WORKBUDDY_PLUGIN/docs"

@@ -76,19 +76,28 @@ function printRecoverySummary(json, summary) {
   const checkpoint = summary.checkpoint
     ? `${summary.checkpoint.status} (${summary.checkpoint.record.task_id})`
     : 'none';
-  const execution = summary.execution.required
-    ? `current ${summary.execution.current ? 'yes' : 'no'}`
-    : 'current n/a';
+  const executionCurrent = summary.execution.required
+    ? (summary.execution.current ? 'yes' : 'no')
+    : 'not required';
+  const executionFailures = summary.execution.required
+    ? (summary.execution.failures.length > 0 ? summary.execution.failures.join('; ') : 'none')
+    : 'not required';
   const handoffs = summary.handoffs;
   const nextAction = summary.next_action.command
     ?? `${summary.next_action.skill}: ${summary.next_action.reason}`;
 
   console.log([
     `Change: ${summary.change.name}`,
+    `Path: ${summary.change.path}`,
+    `Selection: ${summary.change.selection}`,
     `State: ${summary.state}`,
+    `Workflow: ${summary.workflow ?? 'none'}`,
     `Checkpoint: ${checkpoint}`,
     `Handoffs: active ${handoffs.active.length}, result-ready ${handoffs.result_ready.length}, resolved ${handoffs.resolved.length}`,
-    `Execution: ${execution}`,
+    `Execution current: ${executionCurrent}`,
+    `Execution revision: ${summary.execution.revision ?? 'none'}`,
+    `Next eligible wave: ${summary.execution.next_eligible_wave ?? 'none'}`,
+    `Execution failures: ${executionFailures}`,
     summary.blockers.length === 0
       ? 'Blockers: none'
       : `Blockers: ${summary.blockers.map(blocker => blocker.message).join('; ')}`,

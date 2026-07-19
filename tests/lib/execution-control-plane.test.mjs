@@ -103,6 +103,15 @@ describe('execution control plane instructions', () => {
       'release checklist installs the local candidate into that temporary home');
     assert.match(releaseChecklist, /cmd-install-workbuddy\.test\.mjs/,
       'release checklist validates the installer with its focused test');
+    assert.match(releaseChecklist,
+      /node --test tests\/lib\/recovery-command-assets\.test\.mjs.*(?:release blocker|阻断发布)/is,
+      'release checklist runs the recovery command asset guard as a release blocker');
+    assert.match(releaseChecklist,
+      /grep -R -F "\$PWD\/" commands\/ssf/is,
+      'release checklist rejects the local checkout root in canonical command files');
+    assert.match(releaseChecklist,
+      /grep -R -F "\$PWD\/" "\$SSF_WORKBUDDY_PLUGIN\/commands\/ssf"/is,
+      'release checklist rejects the local checkout root in installed command files');
     for (const [asset, assertion] of [
       ['commands/ssf/resume.md', /test -f "\$SSF_WORKBUDDY_PLUGIN\/commands\/ssf\/resume\.md"/],
       ['commands/ssf/switch.md', /test -f "\$SSF_WORKBUDDY_PLUGIN\/commands\/ssf\/switch\.md"/],

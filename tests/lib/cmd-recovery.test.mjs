@@ -1,17 +1,19 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createPlan, writePlan } from '../../scripts/lib/execution-plan.mjs';
+import { createRecommendationReceipt } from '../../scripts/lib/execution-recommendation.mjs';
 
 const CLI = join(process.cwd(), 'scripts/spec-superflow.mjs');
 let root;
 
-function runSsf(args) {
+function runSsf(args, { cwd = process.cwd() } = {}) {
   try {
     const stdout = execFileSync(process.execPath, [CLI, ...args], {
-      encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
+      cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'],
     });
     return { status: 0, stdout, stderr: '' };
   } catch (error) {
@@ -35,6 +37,29 @@ function makeTasksChange(name, tasks) {
   mkdirSync(changeDir);
   writeFileSync(join(changeDir, 'tasks.md'), `# Tasks\n\n${tasks}`);
   return changeDir;
+}
+
+function makeCurrentPlan(changeDir) {
+  writeFileSync(join(changeDir, 'tasks.md'), '# Tasks\n\n- [ ] 1.1 Resume execution\n');
+  writeFileSync(join(changeDir, 'execution-contract.md'), '# Execution Contract\n\nResume safely.\n');
+  const waves = [{ id: 'recovery-cli', strategy: 'serial', tasks: ['1.1'], depends_on: [] }];
+  const recommendationReceipt = createRecommendationReceipt(changeDir, waves);
+  const recommendation = recommendationReceipt.recommendation;
+  const plan = createPlan(changeDir, {
+    mode: recommendation.recommendation.mode,
+    source: 'user-confirmed',
+    rationale: 'Resume the current recovery CLI wave',
+    waves,
+    recommendation,
+    recommendationReceipt,
+    selection: {
+      confirmed: true,
+      followed_recommendation: true,
+      acknowledged_non_recommendation: false,
+    },
+  });
+  writePlan(changeDir, plan);
+  return plan;
 }
 
 beforeEach(() => {
@@ -185,13 +210,52 @@ describe('ssf resume and switch', () => {
     const result = runSsf(['switch', change]);
 
     assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Change: alpha/);
+    assert.match(result.stdout, new RegExp(`Path: ${change.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(result.stdout, /Selection: explicit/);
     assert.match(result.stdout, /State: specifying/);
+    assert.match(result.stdout, /Workflow: full/);
     assert.match(result.stdout, /Checkpoint: none/);
     assert.match(result.stdout, /Handoffs: active 0, result-ready 0, resolved 0/);
-    assert.match(result.stdout, /Execution: current n\/a/);
+    assert.match(result.stdout, /Execution current: not required/);
+    assert.match(result.stdout, /Execution revision: none/);
+    assert.match(result.stdout, /Next eligible wave: none/);
+    assert.match(result.stdout, /Execution failures: not required/);
     assert.match(result.stdout, /Blockers: none/);
     assert.match(result.stdout, /Next action:/);
+    assert.doesNotMatch(result.stdout, /undefined/);
     assert.equal(readFileSync(join(change, '.spec-superflow.yaml'), 'utf8'), stateBefore);
+  });
+
+  it('reports when resume automatically selects the only active change', () => {
+    const changesDir = join(root, 'changes');
+    mkdirSync(changesDir);
+    const change = join(changesDir, 'alpha');
+    mkdirSync(change);
+    writeFileSync(join(change, '.spec-superflow.yaml'), 'state: specifying\nworkflow: full\n');
+
+    const result = runSsf(['resume'], { cwd: root });
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Change: alpha/);
+    assert.match(result.stdout, new RegExp(`Path: ${realpathSync(change).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
+    assert.match(result.stdout, /Selection: only-active/);
+    assert.doesNotMatch(result.stdout, /undefined/);
+  });
+
+  it('renders current execution plan fields and the next eligible wave', () => {
+    const change = makeChange('executing-alpha', 'executing');
+    const plan = makeCurrentPlan(change);
+
+    const result = runSsf(['resume', change]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /Workflow: full/);
+    assert.match(result.stdout, /Execution current: yes/);
+    assert.match(result.stdout, new RegExp(`Execution revision: ${plan.revision}`));
+    assert.match(result.stdout, /Next eligible wave: recovery-cli/);
+    assert.match(result.stdout, /Execution failures: none/);
+    assert.doesNotMatch(result.stdout, /undefined/);
   });
 });
 

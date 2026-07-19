@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+const CHECKOUT_ABSOLUTE_PATHS = [
+  /(?:^|[\s"'`(])\/Users\/[^\s"'`)]*/gm,
+  /(?:^|[\s"'`(])\/home\/[^\s"'`)]*/gm,
+  /(?:^|[\s"'`(])\/(?:workspace|workspaces)\/[^\s"'`)]*/gm,
+  /(?:^|[\s"'`(])\/(?:private\/)?tmp\/[^\s"'`)]*/gm,
+  /(?:^|[\s"'`(])\/(?:[^\s"'`)]*\/)*scripts\/spec-superflow\.mjs\b/gm,
+  /(?:^|[\s"'`(])[A-Za-z]:\\[^\s"'`)]*\\scripts\\spec-superflow\.mjs\b/gm,
+];
+
 function read(path) {
   return readFileSync(join(process.cwd(), path), 'utf8');
 }
@@ -10,6 +19,18 @@ function read(path) {
 function executableSsfCommands(content) {
   return [...content.matchAll(/`([^`\n]*\bssf\s+(?:resume|switch|save)\b[^`]*)`/g)]
     .map(match => match[1]);
+}
+
+function assertNoCheckoutAbsolutePaths(content) {
+  for (const pattern of CHECKOUT_ABSOLUTE_PATHS) {
+    pattern.lastIndex = 0;
+    const match = pattern.exec(content);
+    assert.equal(
+      match,
+      null,
+      `checkout-specific absolute path in command asset: ${match?.[0].trim()}`,
+    );
+  }
 }
 
 function assertNoUnquotedArguments(content) {
@@ -38,6 +59,7 @@ describe('SSF recovery command assets', () => {
       assert.match(content, new RegExp(`spec-superflow@0\\.10\\.0 ssf ${name}`));
       assert.match(content, /\$ARGUMENTS/);
       assert.doesNotMatch(content, /state set|state transition|active-change|\bcd\s/);
+      assertNoCheckoutAbsolutePaths(content);
     });
   }
 
@@ -83,6 +105,29 @@ describe('SSF recovery command assets', () => {
 
     assert.doesNotThrow(() => assertNoUnquotedArguments(safeResume));
     assert.doesNotThrow(() => assertNoUnquotedArguments(read('commands/ssf/save.md')));
+  });
+
+  it('rejects checkout-specific absolute paths anywhere in a command asset', () => {
+    const unsafeAssets = [
+      'Run `node /Users/alice/src/spec-superflow/scripts/spec-superflow.mjs resume`.',
+      'Run `node /home/alice/src/spec-superflow/scripts/spec-superflow.mjs switch`.',
+      'Run `/workspace/spec-superflow/scripts/spec-superflow.mjs save`.',
+      'Run `node /tmp/ssf-checkout/scripts/spec-superflow.mjs resume`.',
+      'Run `node /opt/build/spec-superflow/scripts/spec-superflow.mjs resume`.',
+    ];
+
+    for (const content of unsafeAssets) {
+      assert.throws(
+        () => assertNoCheckoutAbsolutePaths(content),
+        /checkout-specific absolute path/,
+      );
+    }
+  });
+
+  it('does not mistake the pinned portable npx entrypoint for a checkout path', () => {
+    const portable = 'Run `npx --yes --package spec-superflow@0.10.0 ssf resume --json "$ARGUMENTS"`.';
+
+    assert.doesNotThrow(() => assertNoCheckoutAbsolutePaths(portable));
   });
 
   it('passes resume and switch targets as one quoted literal after validation', () => {
