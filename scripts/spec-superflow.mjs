@@ -15,6 +15,7 @@ const COMMANDS = {
   inject:         () => import('./lib/cmd-inject.mjs'),
   audit:          () => import('./lib/cmd-audit.mjs'),
   checkpoint:     () => import('./lib/cmd-checkpoint.mjs'),
+  save:           () => import('./lib/cmd-save.mjs'),
   handoff:        () => import('./lib/cmd-handoff.mjs'),
   isolate:        () => import('./lib/cmd-isolate.mjs'),
   execution:      () => import('./lib/cmd-execution.mjs'),
@@ -56,6 +57,8 @@ Commands:
                         List checkpoints and stale status
   checkpoint show <change-dir> <id>
                         Show one recovery checkpoint
+  save <change-dir> --task <id> --next <text>
+                        Save a checkpoint through the compatibility shortcut
   handoff create <change-dir> --type <type> --objective <text> --expected-output <text> --acceptance <text>
                         Create an explicit prototype/research/experiment handoff
   handoff list <change-dir>
@@ -115,6 +118,7 @@ Examples:
   ssf state get changes/my-change/ batches_completed
   ssf checkpoint save changes/my-change/ --task 1.1 --next "Run focused tests"
   ssf checkpoint list changes/my-change/
+  ssf save changes/my-change/ --task 1.1 --next "Run focused tests"
   ssf handoff create changes/my-change/ --type research --objective "Compare approaches" --expected-output "Recommendation" --acceptance "Evidence recorded"
   ssf resume changes/my-change --json
   ssf switch changes/another-change

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -27,6 +27,13 @@ function makeChange(name, state) {
   const changeDir = join(root, name);
   mkdirSync(changeDir);
   writeFileSync(join(changeDir, '.spec-superflow.yaml'), `state: ${state}\nworkflow: full\n`);
+  return changeDir;
+}
+
+function makeTasksChange(name, tasks) {
+  const changeDir = join(root, name);
+  mkdirSync(changeDir);
+  writeFileSync(join(changeDir, 'tasks.md'), `# Tasks\n\n${tasks}`);
   return changeDir;
 }
 
@@ -155,5 +162,57 @@ describe('ssf resume and switch', () => {
     assert.match(result.stdout, /Blockers: none/);
     assert.match(result.stdout, /Next action:/);
     assert.equal(readFileSync(join(change, '.spec-superflow.yaml'), 'utf8'), stateBefore);
+  });
+});
+
+describe('ssf save', () => {
+  it('writes the existing checkpoint schema', () => {
+    const change = makeTasksChange('alpha', '- [ ] 1.1 Run recovery test\n');
+    const result = runSsf(['save', change, '--task', '1.1', '--next', 'Run tests', '--json']);
+
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.deepEqual(Object.keys(payload), ['ok', 'command', 'change', 'checkpoint']);
+    assert.equal(payload.command, 'save');
+    assert.deepEqual(payload.change, { name: 'alpha', path: change });
+    assert.equal(payload.checkpoint.task_id, '1.1');
+    assert.equal(payload.checkpoint.next, 'Run tests');
+    assert.match(readFileSync(join(change, '.superpowers/sdd/checkpoints/1.1.md'), 'utf8'), /task_hash: "sha256:/);
+  });
+
+  it('rejects missing save inputs as one JSON usage error without writes', () => {
+    const change = makeTasksChange('alpha', '- [ ] 1.1 Existing task\n');
+    const result = runSsf(['save', change, '--task', '1.1', '--json']);
+
+    assert.equal(result.status, 2);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      ok: false,
+      command: 'save',
+      error: {
+        code: 'INVALID_ARGUMENTS',
+        message: 'save requires --task <id> and --next <text>',
+        details: {},
+      },
+    });
+    assert.equal(existsSync(join(change, '.superpowers/sdd/checkpoints/1.1.md')), false);
+    assert.equal(existsSync(join(change, '.superpowers')), false);
+  });
+
+  it('rejects unknown tasks as one JSON domain error without creating a checkpoint', () => {
+    const change = makeTasksChange('alpha', '- [ ] 1.1 Existing task\n');
+    const result = runSsf(['save', change, '--task', '9.9', '--next', 'Continue', '--json']);
+
+    assert.equal(result.status, 1);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      ok: false,
+      command: 'save',
+      error: {
+        code: 'CHECKPOINT_SAVE_FAILED',
+        message: "Task '9.9' was not found in tasks.md",
+        details: {},
+      },
+    });
+    assert.equal(existsSync(join(change, '.superpowers/sdd/checkpoints/9.9.md')), false);
+    assert.equal(existsSync(join(change, '.superpowers')), false);
   });
 });

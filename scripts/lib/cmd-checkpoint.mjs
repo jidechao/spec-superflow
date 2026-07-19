@@ -1,19 +1,43 @@
 // scripts/lib/cmd-checkpoint.mjs - ssf checkpoint recovery records
 import { parseArgs } from 'node:util';
-import { getCheckpoint, listCheckpoints, saveCheckpoint } from './sdd-overlay.mjs';
+import { computeTaskHash, getCheckpoint, listCheckpoints, saveCheckpoint } from './sdd-overlay.mjs';
 
 const USAGE = 'Usage: ssf checkpoint <save|list|show> <change-dir> [options]';
+
+export const CHECKPOINT_SAVE_OPTIONS = {
+  task: { type: 'string' }, next: { type: 'string' }, completed: { type: 'string' },
+  verification: { type: 'string' }, review: { type: 'string' }, risk: { type: 'string' },
+  'commit-start': { type: 'string' }, 'commit-end': { type: 'string' },
+  json: { type: 'boolean', default: false },
+};
+
+export class CheckpointUsageError extends Error {}
+
+export function saveFromValues(changeDir, values) {
+  if (!hasText(values.task) || !hasText(values.next)) {
+    throw new CheckpointUsageError('save requires --task <id> and --next <text>');
+  }
+
+  // Validate before entering the storage writer so an unknown task cannot
+  // create an overlay directory as a side effect.
+  computeTaskHash(changeDir, values.task);
+  return saveCheckpoint(changeDir, {
+    taskId: values.task,
+    next: values.next,
+    completed: values.completed,
+    evidence: values.verification,
+    review: values.review,
+    risk: values.risk,
+    commitStart: values['commit-start'],
+    commitEnd: values['commit-end'],
+  });
+}
 
 export async function run(args) {
   const { positionals, values } = parseArgs({
     args,
     allowPositionals: true,
-    options: {
-      task: { type: 'string' }, next: { type: 'string' }, completed: { type: 'string' },
-      verification: { type: 'string' }, review: { type: 'string' }, risk: { type: 'string' },
-      'commit-start': { type: 'string' }, 'commit-end': { type: 'string' },
-      json: { type: 'boolean', default: false },
-    },
+    options: CHECKPOINT_SAVE_OPTIONS,
   });
 
   const subcommand = positionals[0];
@@ -26,21 +50,14 @@ export async function run(args) {
   }
 
   if (subcommand === 'save') {
-    if (!hasText(values.task) || !hasText(values.next)) {
+    let checkpoint;
+    try {
+      checkpoint = saveFromValues(changeDir, values);
+    } catch (error) {
+      if (!(error instanceof CheckpointUsageError)) throw error;
       console.error('Usage: ssf checkpoint save <change-dir> --task <id> --next <text>');
       process.exit(2);
     }
-
-    const checkpoint = saveCheckpoint(changeDir, {
-      taskId: values.task,
-      next: values.next,
-      completed: values.completed,
-      evidence: values.verification,
-      review: values.review,
-      risk: values.risk,
-      commitStart: values['commit-start'],
-      commitEnd: values['commit-end'],
-    });
     if (values.json) {
       console.log(JSON.stringify({ ok: true, checkpoint }));
     } else {
