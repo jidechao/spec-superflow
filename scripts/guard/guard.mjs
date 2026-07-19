@@ -37,7 +37,6 @@ const TRANSITION_CHECKS = {
   'approved-for-build:bridging':    [],
   'executing:specifying':           [],
   'executing:bridging':             [],
-  'closing:specifying':             [],
 
   // Abandon transitions (terminal)
   'exploring:abandoned':            [],
