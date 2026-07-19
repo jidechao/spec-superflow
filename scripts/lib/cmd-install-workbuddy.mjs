@@ -19,7 +19,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { cp, writeFile, mkdtemp } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -33,6 +33,7 @@ const PLUGIN_NAME = 'spec-superflow';
 const GITHUB_REPO = 'MageByte-Zero/spec-superflow';
 const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
 const RUNTIME_DIRS = ['scripts', 'docs', 'templates', 'dist', 'hooks'];
+const CANONICAL_COMMAND_NAMES = ['ssf:resume', 'ssf:save', 'ssf:switch'];
 
 // ─── helpers ──────────────────────────────────────────────
 
@@ -55,6 +56,36 @@ function listSkillNames(skillsDir) {
       return statSync(dir).isDirectory() && existsSync(join(dir, 'SKILL.md'));
     })
     .sort();
+}
+
+function walkMarkdown(dir) {
+  return readdirSync(dir, { withFileTypes: true })
+    .flatMap(entry => {
+      const entryPath = join(dir, entry.name);
+      if (entry.isDirectory()) return walkMarkdown(entryPath);
+      return entry.isFile() && entry.name.endsWith('.md') ? [entryPath] : [];
+    })
+    .sort();
+}
+
+function listCommandNames(commandsDir) {
+  if (!existsSync(commandsDir)) {
+    throw new Error(`commands/ directory not found at ${commandsDir}`);
+  }
+  return walkMarkdown(commandsDir)
+    .map(filePath => relative(commandsDir, filePath).replace(/\.md$/, '').split(sep).join(':'))
+    .sort();
+}
+
+function assertCanonicalCommands(commandNames) {
+  if (
+    commandNames.length !== CANONICAL_COMMAND_NAMES.length
+    || commandNames.some((name, index) => name !== CANONICAL_COMMAND_NAMES[index])
+  ) {
+    throw new Error(
+      `canonical recovery command set is required: ${CANONICAL_COMMAND_NAMES.join(', ')}; found: ${commandNames.join(', ') || '(none)'}`,
+    );
+  }
 }
 
 /** Recursively copy a directory. */
@@ -199,10 +230,14 @@ function planInstall({ pluginRoot = defaultPluginRoot, homeDir = homedir(), mark
   const root = resolve(pluginRoot);
   const skillsDir = join(root, 'skills');
   const skillNames = listSkillNames(skillsDir);
+  const commandsDir = join(root, 'commands');
+  const commandNames = listCommandNames(commandsDir);
+  assertCanonicalCommands(commandNames);
   const workbuddyRoot = join(homeDir, '.workbuddy');
   const pluginsDir = join(workbuddyRoot, 'plugins', 'marketplaces', marketplaceName, 'plugins');
   const targetPluginDir = join(pluginsDir, PLUGIN_NAME);
   const targetSkills = join(targetPluginDir, 'skills');
+  const targetCommands = join(targetPluginDir, 'commands');
   const targetRules = join(targetPluginDir, 'rules');
   const manifestDir = join(targetPluginDir, '.codebuddy-plugin');
   const settingsPath = join(workbuddyRoot, 'settings.json');
@@ -214,10 +249,13 @@ function planInstall({ pluginRoot = defaultPluginRoot, homeDir = homedir(), mark
     pluginRoot: root,
     skillsDir,
     skillNames,
+    commandsDir,
+    commandNames,
     workbuddyRoot,
     pluginsDir,
     targetPluginDir,
     targetSkills,
+    targetCommands,
     targetRules,
     manifestDir,
     settingsPath,
@@ -232,7 +270,7 @@ function planInstall({ pluginRoot = defaultPluginRoot, homeDir = homedir(), mark
 
 async function installWorkBuddy({ pluginRoot, homeDir, marketplaceName }) {
   const plan = planInstall({ pluginRoot, homeDir, marketplaceName });
-  const { skillNames, targetPluginDir, targetSkills, targetRules, manifestDir, settingsPath, enabledPluginKey, version, pluginRootAbs } = plan;
+  const { skillNames, commandNames, targetPluginDir, targetSkills, targetCommands, targetRules, manifestDir, settingsPath, enabledPluginKey, version, pluginRootAbs } = plan;
 
   // 0. Clean old plugin dir.
   if (existsSync(targetPluginDir)) {
@@ -253,21 +291,25 @@ async function installWorkBuddy({ pluginRoot, homeDir, marketplaceName }) {
     }
   }
 
-  // 2. Copy skills with ${CLAUDE_PLUGIN_ROOT} rewriting.
+  // 2. Copy canonical recovery commands as complete Markdown assets.
+  const commandCount = await copyDir(plan.commandsDir, targetCommands);
+  console.log(`   commands/ → ${targetCommands} (${commandCount} entries, ${commandNames.length} commands)`);
+
+  // 3. Copy skills with ${CLAUDE_PLUGIN_ROOT} rewriting.
   const count = await copySkillsWithRoot(plan.skillsDir, targetSkills, pluginRootAbs);
   console.log(`   skills/ → ${targetSkills} (${count} skills, paths rewritten)`);
 
-  // 3. Write phase-guard rule.
+  // 4. Write phase-guard rule.
   ensureDir(targetRules);
   await writeFile(join(targetRules, 'phase-guard.md'), phaseGuardContent(), 'utf-8');
   console.log(`   phase-guard → ${join(targetRules, 'phase-guard.md')}`);
 
-  // 4. Write plugin manifest.
+  // 5. Write plugin manifest.
   ensureDir(manifestDir);
   await writeFile(join(manifestDir, 'plugin.json'), JSON.stringify(pluginManifest(skillNames, version), null, 2) + '\n', 'utf-8');
   console.log(`   manifest → ${join(manifestDir, 'plugin.json')}`);
 
-  // 5. Enable plugin in settings.json.
+  // 6. Enable plugin in settings.json.
   ensureDir(plan.workbuddyRoot);
   const settings = readJsonIfExists(settingsPath);
   settings.enabledPlugins = settings.enabledPlugins && typeof settings.enabledPlugins === 'object'
@@ -310,9 +352,11 @@ export async function run(args) {
     console.log('WorkBuddy install plan:');
     console.log(`  Plugin:      ${PLUGIN_NAME} v${plan.version}`);
     console.log(`  Skills:      ${plan.skillNames.length} (${plan.skillNames.join(', ')})`);
+    console.log(`  Commands:    ${plan.commandNames.length} (${plan.commandNames.join(', ')})`);
     console.log(`  Marketplace: ${plan.marketplaceName}`);
     console.log(`  Target:      ${plan.targetPluginDir}`);
     console.log(`  Rules:       ${plan.targetRules}/phase-guard.md`);
+    console.log(`  Command dir: ${plan.targetCommands}`);
     console.log(`  Settings:    ${plan.enabledPluginKey}`);
     return;
   }
@@ -356,4 +400,4 @@ export async function run(args) {
   }
 }
 
-export { planInstall, installWorkBuddy, PLUGIN_NAME };
+export { listCommandNames, planInstall, installWorkBuddy, PLUGIN_NAME };
