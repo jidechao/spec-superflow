@@ -18,7 +18,7 @@ function runSsf(args) {
     return {
       status: error.status || 1,
       stdout: error.stdout?.toString() || '',
-      stderr: error.stderr?.toString() || error.message,
+      stderr: error.stderr?.toString() ?? error.message,
     };
   }
 }
@@ -113,6 +113,36 @@ describe('ssf resume and switch', () => {
           details: { positionals: ['alpha', 'beta'] },
         },
       });
+    });
+
+    it(`maps native ${command} parse errors to one JSON usage error`, () => {
+      const usage = command === 'resume'
+        ? 'Usage: ssf resume [change-dir] [--json]'
+        : 'Usage: ssf switch <change-dir> [--json]';
+      const result = runSsf([command, '--json', '--bad-option']);
+
+      assert.equal(result.status, 2);
+      assert.deepEqual(JSON.parse(result.stdout), {
+        ok: false,
+        command,
+        error: {
+          code: 'INVALID_ARGUMENTS',
+          message: usage,
+          details: {},
+        },
+      });
+      assert.equal(result.stderr, '');
+    });
+
+    it(`maps native ${command} parse errors to text usage`, () => {
+      const usage = command === 'resume'
+        ? 'Usage: ssf resume [change-dir] [--json]'
+        : 'Usage: ssf switch <change-dir> [--json]';
+      const result = runSsf([command, '--bad-option']);
+
+      assert.equal(result.status, 2);
+      assert.equal(result.stdout, '');
+      assert.equal(result.stderr, `${usage}\n`);
     });
   }
 

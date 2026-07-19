@@ -1,16 +1,33 @@
 import { parseArgs } from 'node:util';
 import { RecoveryError, createRecoverySummary, resolveChangeTarget } from './change-recovery.mjs';
 
+const USAGE = {
+  resume: 'Usage: ssf resume [change-dir] [--json]',
+  switch: 'Usage: ssf switch <change-dir> [--json]',
+};
+
 export async function runRecoveryCommand(command, args, { requireTarget = false } = {}) {
   let values = { json: args.includes('--json') };
 
+  let parsed;
   try {
-    const parsed = parseArgs({
+    parsed = parseArgs({
       args,
       allowPositionals: true,
       options: { json: { type: 'boolean', default: false } },
     });
-    values = parsed.values;
+  } catch {
+    printRecoveryError(
+      command,
+      new RecoveryError('INVALID_ARGUMENTS', USAGE[command], {}, 2),
+      values.json,
+      { usage: true },
+    );
+    return;
+  }
+
+  values = parsed.values;
+  try {
 
     if (parsed.positionals.length > 1) {
       throw new RecoveryError(
@@ -79,7 +96,7 @@ function printRecoverySummary(json, summary) {
   ].join('\n'));
 }
 
-function printRecoveryError(command, error, json) {
+function printRecoveryError(command, error, json, { usage = false } = {}) {
   const recoveryError = toRecoveryError(error);
   const payload = {
     ok: false,
@@ -92,7 +109,7 @@ function printRecoveryError(command, error, json) {
   };
 
   if (json) console.log(JSON.stringify(payload));
-  else console.error(`${recoveryError.code}: ${recoveryError.message}`);
+  else console.error(usage ? recoveryError.message : `${recoveryError.code}: ${recoveryError.message}`);
   process.exitCode = recoveryError.exitCode;
 }
 
