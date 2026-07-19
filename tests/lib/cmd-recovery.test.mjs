@@ -69,6 +69,23 @@ describe('ssf resume and switch', () => {
     });
   });
 
+  for (const command of ['resume', 'switch']) {
+    it(`rejects multiple change targets from ${command} as JSON`, () => {
+      const result = runSsf([command, 'alpha', 'beta', '--json']);
+
+      assert.equal(result.status, 2);
+      assert.deepEqual(JSON.parse(result.stdout), {
+        ok: false,
+        command,
+        error: {
+          code: 'INVALID_ARGUMENTS',
+          message: `${command} accepts at most one change target`,
+          details: { positionals: ['alpha', 'beta'] },
+        },
+      });
+    });
+  }
+
   it('returns a single JSON object for recovery domain errors', () => {
     const result = runSsf(['resume', join(root, 'missing'), '--json']);
 
@@ -82,6 +99,23 @@ describe('ssf resume and switch', () => {
         details: { input: join(root, 'missing') },
       },
     });
+  });
+
+  it('keeps unexpected recovery read failures as domain JSON errors', () => {
+    const change = join(root, 'unreadable');
+    mkdirSync(change);
+    mkdirSync(join(change, '.spec-superflow.yaml'));
+
+    const result = runSsf(['resume', change, '--json']);
+    const payload = JSON.parse(result.stdout);
+
+    assert.equal(result.status, 1);
+    assert.equal(payload.ok, false);
+    assert.equal(payload.command, 'resume');
+    assert.equal(payload.error.code, 'RECOVERY_FAILED');
+    assert.match(payload.error.message, /EISDIR/);
+    assert.equal(payload.error.details.code, 'EISDIR');
+    assert.match(payload.error.details.message, /EISDIR/);
   });
 
   it('renders the complete recovery context as text without changing the target', () => {

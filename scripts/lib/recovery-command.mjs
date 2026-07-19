@@ -12,6 +12,15 @@ export async function runRecoveryCommand(command, args, { requireTarget = false 
     });
     values = parsed.values;
 
+    if (parsed.positionals.length > 1) {
+      throw new RecoveryError(
+        'INVALID_ARGUMENTS',
+        `${command} accepts at most one change target`,
+        { positionals: parsed.positionals },
+        2,
+      );
+    }
+
     if (requireTarget && !parsed.positionals[0]) {
       throw new RecoveryError(
         'TARGET_REQUIRED',
@@ -71,9 +80,7 @@ function printRecoverySummary(json, summary) {
 }
 
 function printRecoveryError(command, error, json) {
-  const recoveryError = error instanceof RecoveryError
-    ? error
-    : new RecoveryError('INVALID_ARGUMENTS', error instanceof Error ? error.message : String(error), {}, 2);
+  const recoveryError = toRecoveryError(error);
   const payload = {
     ok: false,
     command,
@@ -87,4 +94,18 @@ function printRecoveryError(command, error, json) {
   if (json) console.log(JSON.stringify(payload));
   else console.error(`${recoveryError.code}: ${recoveryError.message}`);
   process.exitCode = recoveryError.exitCode;
+}
+
+function toRecoveryError(error) {
+  if (error instanceof RecoveryError) return error;
+
+  const message = error instanceof Error ? error.message : String(error);
+  const details = error instanceof Error
+    ? {
+      message,
+      ...(typeof error.code === 'string' ? { code: error.code } : {}),
+      ...(typeof error.path === 'string' ? { path: error.path } : {}),
+    }
+    : { message };
+  return new RecoveryError('RECOVERY_FAILED', message, details, 1);
 }
