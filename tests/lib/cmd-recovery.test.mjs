@@ -69,6 +69,29 @@ describe('ssf resume and switch', () => {
     });
   });
 
+  it('rejects a whitespace-only switch target as text', () => {
+    const result = runSsf(['switch', '   ']);
+
+    assert.equal(result.status, 2);
+    assert.equal(result.stdout, '');
+    assert.match(result.stderr, /TARGET_REQUIRED: switch requires an explicit change target/);
+  });
+
+  it('rejects a whitespace-only switch target as JSON', () => {
+    const result = runSsf(['switch', '   ', '--json']);
+
+    assert.equal(result.status, 2);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      ok: false,
+      command: 'switch',
+      error: {
+        code: 'TARGET_REQUIRED',
+        message: 'switch requires an explicit change target',
+        details: {},
+      },
+    });
+  });
+
   for (const command of ['resume', 'switch']) {
     it(`rejects multiple change targets from ${command} as JSON`, () => {
       const result = runSsf([command, 'alpha', 'beta', '--json']);

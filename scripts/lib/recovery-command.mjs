@@ -21,7 +21,7 @@ export async function runRecoveryCommand(command, args, { requireTarget = false 
       );
     }
 
-    if (requireTarget && !parsed.positionals[0]) {
+    if (requireTarget && !hasExplicitTarget(parsed.positionals[0])) {
       throw new RecoveryError(
         'TARGET_REQUIRED',
         'switch requires an explicit change target',
@@ -108,4 +108,8 @@ function toRecoveryError(error) {
     }
     : { message };
   return new RecoveryError('RECOVERY_FAILED', message, details, 1);
+}
+
+function hasExplicitTarget(target) {
+  return typeof target === 'string' && target.trim().length > 0;
 }
