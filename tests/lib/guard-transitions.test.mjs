@@ -4,7 +4,7 @@
 
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, rmSync, mkdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -80,15 +80,25 @@ function runGuard(from, to, dir, workflow = 'full') {
     writeFileSync(join(dir, 'specs', 'test', 'spec.md'), '## ADDED Requirements\n\n### Requirement: Test\n\nThe system SHALL test.\n\n#### Scenario: Test\n- **WHEN** test\n- **THEN** test\n');
     writeFileSync(join(dir, 'execution-contract.md'), '# Execution Contract\n\n## Intent Lock\n\nTest.\n');
 
-    const cmd = `node ${GUARD} check "${dir}" ${from} ${to}`;
+    const args = [GUARD, 'check', dir, from, to, '--json'];
     if (workflow !== 'full') {
-      execSync(`${cmd} --workflow ${workflow} --json`, { stdio: 'pipe', timeout: 5000 });
-    } else {
-      execSync(`${cmd} --json`, { stdio: 'pipe', timeout: 5000 });
+      args.push('--workflow', workflow);
     }
-    return { ok: true };
+
+    const stdout = execFileSync(process.execPath, args, { encoding: 'utf8', timeout: 5000 });
+    return { ok: true, status: 0, stdout, stderr: '', signal: null, timedOut: false, spawnError: null };
   } catch (e) {
-    return { ok: false, stdout: e.stdout?.toString() || '', stderr: e.stderr?.toString() || e.message };
+    const errorCode = typeof e.code === 'string' ? e.code : null;
+    const timedOut = errorCode === 'ETIMEDOUT' || (e.killed === true && e.status === null);
+    return {
+      ok: false,
+      status: e.status ?? null,
+      stdout: e.stdout?.toString() || '',
+      stderr: e.stderr?.toString() || '',
+      signal: e.signal ?? null,
+      timedOut,
+      spawnError: timedOut ? null : errorCode,
+    };
   }
 }
 
@@ -202,16 +212,34 @@ describe('Terminal state protection — abandoned', () => {
   }
 });
 
-// Scenario: 从 closing 不能进入 abandoned
+// Scenario: closing 后拒绝所有 transition
 describe('Terminal state protection — closing', () => {
   let dir;
   before(() => { dir = makeChangeDir(); });
   after(() => { cleanup(dir); });
 
-  it('SHALL reject closing → abandoned', () => {
-    const result = runGuard('closing', 'abandoned', dir);
-    assert.equal(result.ok, false, 'Closing → abandoned must be rejected (both terminal)');
-  });
+  const allTargets = ['exploring', 'specifying', 'bridging', 'approved-for-build', 'executing', 'debugging', 'abandoned'];
+
+  for (const target of allTargets) {
+    it(`SHALL reject closing → ${target}`, () => {
+      const result = runGuard('closing', target, dir);
+      const expectedError = `Unknown transition: closing -> ${target}`;
+
+      assert.equal(result.timedOut, false, `Closing → ${target} must not time out`);
+      assert.equal(result.spawnError, null, `Closing → ${target} must not fail to spawn the guard`);
+      assert.equal(result.signal, null, `Closing → ${target} must not terminate by signal`);
+      assert.equal(result.status, 1, `Closing → ${target} must exit with the guard rejection status`);
+      assert.equal(result.stderr, '', `Closing → ${target} must report its rejection as JSON stdout`);
+
+      let response;
+      assert.doesNotThrow(() => { response = JSON.parse(result.stdout); },
+        `Closing → ${target} must return parseable JSON: ${result.stdout}`);
+      assert.equal(response.pass, false, `Closing → ${target} response must fail`);
+      assert.deepEqual(response.checks, [], `Closing → ${target} must not run transition checks`);
+      assert.match(response.error, new RegExp(`^${expectedError.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}`),
+        `Closing → ${target} must report the authoritative unknown-transition error`);
+    });
+  }
 });
 
 // ─── D1: Fast-path validation ───
