@@ -11,6 +11,22 @@
 - no implementation is allowed
 - `need-explorer` is active
 
+#### Workflow Path Intake
+
+At entry, `workflow-start` reads the persisted `workflow` selection first. An
+explicit `full`, `hotfix`, or `tweak` selection wins. Otherwise it runs `ssf
+workflow show`, asks only for `missing_facts`, runs `ssf workflow recommend`,
+and presents Observed, Available, Recommended, and Why. Recommendation does
+not change state or select a path: only an explicit `ssf workflow select
+--confirm` writes `workflow`. A non-recommended selection requires
+`--acknowledge-recommendation`. The legacy `runtime infer` compatibility API
+may return `full` for an empty directory, but it never replaces the user's
+intake selection.
+
+This is the DP-0 planning-path decision. DP-4 remains the separate execution
+mode decision among Inline, Batch Inline, and SDD. Neither recommendation nor
+selection creates a ninth state or performs a phase transition.
+
 ### `specifying`
 
 - planning artifacts are being written or revised

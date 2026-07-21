@@ -76,9 +76,29 @@ Config-aware routing: check `artifacts.order`, `artifacts.skip`, and
 
 ## Mode Detection
 
-If workflow is `auto`/`null`/unset: run `npx --yes --package spec-superflow@0.10.0 ssf runtime infer <change-dir>`. Inference: **hotfix** (≤2 tasks, ≤2 files, no schema/API/new modules), **tweak** (≤4 tasks, config/doc only), **full** (anything larger). Persist with `npx --yes --package spec-superflow@0.10.0 ssf state set <dir> workflow <mode>`.
+Workflow path selection is a DP-0 intake decision. It selects the planning path
+(`full`, `hotfix`, or `tweak`); it is separate from DP-4, which later selects
+the execution mode (`Inline`, `Batch Inline`, or `SDD`). It does not add a
+state or cause a phase transition.
 
-Validate mode against artifact content. If hotfix/tweak criteria not met → upgrade to `full` and output reason. Don't overwrite explicit mode unless user asks.
+1. Read `state.workflow`. An explicit `full`/`hotfix`/`tweak` selection wins;
+   report it and skip recommendation.
+2. For `auto`/`null`/unset, run `npx --yes --package spec-superflow@0.10.0 ssf workflow show <change-dir> --json` before collecting or changing any facts.
+3. If the response is `needs-input`, ask only for the fields listed in
+   `missing_facts`. Do not invent facts from missing artifacts and do not default
+   the path to `full`.
+4. Run `npx --yes --package spec-superflow@0.10.0 ssf workflow recommend <change-dir> ...` once with one complete fact snapshot.
+5. Show the user `Observed`, `Available`, `Recommended`, and `Why`. A
+   recommendation is advice only: never persist it as the workflow selection.
+6. Obtain the user's explicit path choice, then run
+   `npx --yes --package spec-superflow@0.10.0 ssf workflow select <change-dir> --mode <full|hotfix|tweak> --confirm --reason "<user choice>"`.
+7. Add `--acknowledge-recommendation` only after the user chooses a
+   non-recommended path. Report the persisted receipt and DP-0 audit summary.
+8. Keep `npx --yes --package spec-superflow@0.10.0 ssf runtime infer <change-dir>` only for legacy artifact inference and validation compatibility; it cannot replace user selection at intake.
+
+If `show` reports `selection-pending`, explain that its signed receipt was
+written before the state update and safely repeat the same explicit `select`
+command. Do not overwrite an explicit mode unless the user asks.
 
 ## Routing Rules
 

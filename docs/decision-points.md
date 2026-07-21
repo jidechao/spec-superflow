@@ -7,8 +7,9 @@
 - **编号**：DP-0
 - **名称**：设计前确认
 - **触发条件**：`workflow-start` 检测到规划工件不存在或不完整，准备路由到 `spec-writer` 之前
-- **所需输入**：变更名称与意图、已知约束（命名风格、兼容性、受影响平台）、是否包含相关优化、用户沟通偏好
-- **预期输出**：用户确认关键决策，或提出修改意见；`workflow-start` 将确认结果写入 `.spec-superflow.yaml` 的 `dp_0_*` 字段
+- **所需输入**：变更名称与意图、已知约束（命名风格、兼容性、受影响平台）、是否包含相关优化、用户沟通偏好；以及最少路径事实（任务数、文件数、是否仅配置/文档、是否涉及 schema/API、新模块和不确定性）
+- **路径选择协议**：`workflow-start` 先读取 `ssf workflow show`；仅在 `missing_facts` 列出的字段缺失时提问，再运行 `ssf workflow recommend`。它必须向用户展示 Observed、Available、Recommended、Why 四项信息，推荐本身不改变状态也不写入 workflow。用户明确选择 `full`、`hotfix` 或 `tweak` 后，才可用 `ssf workflow select --confirm` 持久化；选择非推荐路径还必须显式传入 `--acknowledge-recommendation`。
+- **预期输出**：用户确认关键决策，或提出修改意见；`workflow-start` 将确认结果、路径选择 receipt 及 `workflow_path`/推荐对齐摘要写入 `.spec-superflow.yaml` 的 `dp_0_*` 字段，便于恢复和审计。空目录的 legacy artifact inference 可以返回 `full` 以兼容旧 API，但绝不能替代入口的用户选择。
 - **关联 skill**：`spec-superflow:workflow-start`
 
 ## DP-1: 需求确认
@@ -43,8 +44,8 @@
 - **编号**：DP-4
 - **名称**：执行模式选择
 - **触发条件**：build-executor 启动执行前，用户需要选择本次执行的开发模式
-- **所需输入**：已批准的 `execution-contract.md`、项目测试基础设施现状、用户对 TDD（测试驱动开发）和 SDD（规格驱动开发）两种模式的说明
-- **预期输出**：用户明确选择 TDD 模式或 SDD 模式，build-executor 据此调整执行策略
+- **所需输入**：已批准的 `execution-contract.md`、项目测试基础设施现状，以及 `ssf execution recommend` 提供的执行模式证据与建议
+- **预期输出**：用户明确选择 `Inline`、`Batch Inline` 或 `SDD` 执行模式，build-executor 据此创建受确认的执行计划。DP-4 不重新选择 DP-0 已确认的 `full`、`hotfix` 或 `tweak` 路径。
 - **关联 skill**：`spec-superflow:build-executor`
 
 ## DP-5: 调试升级
